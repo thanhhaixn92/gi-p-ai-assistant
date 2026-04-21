@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,12 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bell, LogOut, Plus, Search, Sparkles, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { toast } from "sonner";
 
 export function Topbar() {
   const { user, signOut } = useAuth();
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 h-14 flex items-center gap-2 sm:gap-4 border-b bg-background/80 backdrop-blur px-3 sm:px-4">
@@ -27,12 +30,13 @@ export function Topbar() {
 
       <div className="flex-1 sm:hidden" />
 
-      <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => toast.info("Tìm kiếm sắp ra mắt")}>
-        <Search className="h-4 w-4" />
+      <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => setCreateOpen(true)}>
+        <Plus className="h-4 w-4" />
       </Button>
 
-      <Button size="sm" className="hidden md:inline-flex" onClick={() => toast.info("Tạo nhanh sắp ra mắt")}>
-        <Plus className="h-4 w-4 mr-1.5" /> Tạo mới
+      <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <Button size="sm" className="hidden md:inline-flex" onClick={() => setCreateOpen(true)}>
+        <Plus className="h-4 w-4 mr-1.5" /> Tạo task
       </Button>
 
       <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => toast.info("Trợ lý AI sắp ra mắt")}>
