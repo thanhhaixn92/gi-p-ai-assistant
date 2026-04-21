@@ -5,6 +5,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
+import { NotesGrid } from "@/components/notes/NotesGrid";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Anchor, LifeBuoy, Award, type LucideIcon } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = { Anchor, LifeBuoy, Award };
@@ -59,10 +61,18 @@ const AssignmentPage = () => {
       {loading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <KanbanBoard
-          title={`Công việc — ${asn?.name}`}
-          assignment_code={asn?.code}
-        />
+        <Tabs defaultValue="tasks" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="tasks">Công việc</TabsTrigger>
+            <TabsTrigger value="notes">Ghi chú</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tasks">
+            <KanbanBoard title={`Công việc — ${asn?.name}`} assignment_code={asn?.code} />
+          </TabsContent>
+          <TabsContent value="notes">
+            <NotesGrid title={`Ghi chú — ${asn?.name}`} assignmentCode={asn?.code} />
+          </TabsContent>
+        </Tabs>
       )}
     </AppLayout>
   );

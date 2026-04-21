@@ -71,9 +71,10 @@ export function CreateTaskDialog({
     setTitle(""); setDescription(""); setPriority("medium"); setDueDate("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault();
+    if (!title.trim() || createTask.isPending) return;
+    try {
     await createTask.mutateAsync({
       title: title.trim(),
       description: description.trim() || null,
@@ -85,13 +86,16 @@ export function CreateTaskDialog({
     });
     reset();
     setOpen(false);
+    } catch (err) {
+      console.error("Create task failed", err);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-lg">
-        <form onSubmit={handleSubmit}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="contents">
           <DialogHeader>
             <DialogTitle>Tạo task mới</DialogTitle>
             <DialogDescription>Ghi nhận một công việc cần xử lý theo Quyết định 143.</DialogDescription>
@@ -172,7 +176,11 @@ export function CreateTaskDialog({
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Huỷ</Button>
-            <Button type="submit" disabled={createTask.isPending || !title.trim()}>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={createTask.isPending || !title.trim()}
+            >
               {createTask.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Plus className="h-4 w-4 mr-1.5" />}
               Tạo task
             </Button>
