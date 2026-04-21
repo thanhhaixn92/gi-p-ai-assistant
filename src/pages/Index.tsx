@@ -1,16 +1,134 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader, StatCard } from "@/components/dashboard/StatCard";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import {
+  CheckCircle2, Clock, AlertTriangle, FileText, Anchor, LifeBuoy, Award,
+  ArrowRight, Calendar, type LucideIcon,
+  ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake,
+} from "lucide-react";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
-  return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
-  );
+const iconMap: Record<string, LucideIcon> = {
+  ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake,
+  Anchor, LifeBuoy, Award,
 };
 
-const Index = PlaceholderIndex;
+interface Item { code: string; name: string; description: string | null; icon: string | null; }
+
+const Index = () => {
+  const [categories, setCategories] = useState<Item[]>([]);
+  const [assignments, setAssignments] = useState<Item[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [c, a] = await Promise.all([
+        supabase.from("categories").select("code,name,description,icon").order("sort_order"),
+        supabase.from("assignments").select("code,name,description,icon").order("sort_order"),
+      ]);
+      if (c.data) setCategories(c.data);
+      if (a.data) setAssignments(a.data);
+    })();
+  }, []);
+
+  const today = new Date().toLocaleDateString("vi-VN", {
+    weekday: "long", day: "2-digit", month: "long", year: "numeric",
+  });
+
+  return (
+    <AppLayout>
+      <PageHeader
+        title="Bảng điều khiển Phó Giám đốc"
+        subtitle="Tổng quan công việc theo Quyết định 143/QĐ-CTHTHHMB — 9 lĩnh vực phụ trách và 3 chức danh kiêm nhiệm."
+        badge={
+          <Badge variant="secondary" className="gap-1.5">
+            <Calendar className="h-3 w-3" /> {today}
+          </Badge>
+        }
+      >
+        <Button variant="outline" size="sm">Xuất báo cáo</Button>
+        <Button size="sm">Họp giao ban</Button>
+      </PageHeader>
+
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+        <StatCard label="Việc đang xử lý" value={12} hint="3 sắp tới hạn" icon={Clock} tone="primary" />
+        <StatCard label="Hoàn thành tuần" value={8} hint="+25% so với tuần trước" icon={CheckCircle2} tone="success" />
+        <StatCard label="Cần phê duyệt" value={5} hint="2 ưu tiên cao" icon={AlertTriangle} tone="warning" />
+        <StatCard label="Văn bản mới" value={17} hint="Trong 7 ngày" icon={FileText} tone="info" />
+      </div>
+
+      {/* 3 Kiêm nhiệm — nổi bật */}
+      <section className="mb-8">
+        <div className="flex items-end justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold">3 Chức danh kiêm nhiệm</h2>
+            <p className="text-sm text-muted-foreground">Truy cập nhanh các bảng điều khiển chuyên biệt</p>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {assignments.map((a) => {
+            const Icon = iconMap[a.icon ?? ""] ?? Award;
+            return (
+              <Link key={a.code} to={`/kiem-nhiem/${a.code.toLowerCase()}`} className="group">
+                <Card className="h-full overflow-hidden border-border/60 shadow-card hover:shadow-elegant transition-all">
+                  <div className="h-1.5 gradient-accent" />
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-11 w-11 rounded-lg gradient-primary text-primary-foreground flex items-center justify-center shrink-0 shadow-md">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base leading-snug">{a.name}</CardTitle>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="line-clamp-2">{a.description}</CardDescription>
+                    <div className="mt-4 flex items-center text-sm font-medium text-primary group-hover:gap-2 gap-1.5 transition-all">
+                      Mở bảng điều khiển <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 9 lĩnh vực */}
+      <section>
+        <div className="flex items-end justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold">9 Lĩnh vực công tác</h2>
+            <p className="text-sm text-muted-foreground">Phân công theo Quyết định 143</p>
+          </div>
+        </div>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
+          {categories.map((c) => {
+            const Icon = iconMap[c.icon ?? ""] ?? FileText;
+            return (
+              <Link key={c.code} to={`/linh-vuc/${c.code.toLowerCase()}`}>
+                <Card className="h-full border-border/60 shadow-card hover:shadow-elegant hover:border-primary/40 transition-all">
+                  <CardContent className="p-4 flex gap-3 items-start">
+                    <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm leading-snug">{c.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+    </AppLayout>
+  );
+};
 
 export default Index;
