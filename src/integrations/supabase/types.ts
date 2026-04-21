@@ -98,6 +98,69 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assignment_code: string | null
+          category_code: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          position: number
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_code?: string | null
+          category_code?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          position?: number
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_code?: string | null
+          category_code?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          position?: number
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assignment_code_fkey"
+            columns: ["assignment_code"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "tasks_category_code_fkey"
+            columns: ["category_code"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -106,7 +169,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_priority: "low" | "medium" | "high" | "urgent"
+      task_status: "todo" | "doing" | "review" | "done" | "blocked"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -233,6 +297,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      task_priority: ["low", "medium", "high", "urgent"],
+      task_status: ["todo", "doing", "review", "done", "blocked"],
+    },
   },
 } as const
