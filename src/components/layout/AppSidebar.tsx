@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Anchor, LayoutDashboard, type LucideIcon, ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake, LifeBuoy, Award } from "lucide-react";
+import { Anchor, FileText, LayoutDashboard, type LucideIcon, ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake, LifeBuoy, Award } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
   ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake,
@@ -65,6 +65,14 @@ export function AppSidebar() {
                   <NavLink to="/" end className={linkCls}>
                     <LayoutDashboard className="h-4 w-4 shrink-0" />
                     {!collapsed && <span>Bảng điều khiển</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === "/ghi-chu"} tooltip="Ghi chú">
+                  <NavLink to="/ghi-chu" className={linkCls}>
+                    <FileText className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>Ghi chú</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -9,6 +9,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import CategoryPage from "./pages/CategoryPage.tsx";
 import AssignmentPage from "./pages/AssignmentPage.tsx";
+import NotesPage from "./pages/NotesPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/ghi-chu" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
             <Route path="/linh-vuc/:code" element={<ProtectedRoute><CategoryPage /></ProtectedRoute>} />
             <Route path="/kiem-nhiem/:code" element={<ProtectedRoute><AssignmentPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

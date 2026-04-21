@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
+import { NotesGrid } from "@/components/notes/NotesGrid";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileText, type LucideIcon,
   ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake,
@@ -56,10 +58,18 @@ const CategoryPage = () => {
       {loading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <KanbanBoard
-          title={`Công việc — ${cat?.name}`}
-          category_code={cat?.code}
-        />
+        <Tabs defaultValue="tasks" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="tasks">Công việc</TabsTrigger>
+            <TabsTrigger value="notes">Ghi chú</TabsTrigger>
+          </TabsList>
+          <TabsContent value="tasks">
+            <KanbanBoard title={`Công việc — ${cat?.name}`} category_code={cat?.code} />
+          </TabsContent>
+          <TabsContent value="notes">
+            <NotesGrid title={`Ghi chú — ${cat?.name}`} categoryCode={cat?.code} />
+          </TabsContent>
+        </Tabs>
       )}
     </AppLayout>
   );
