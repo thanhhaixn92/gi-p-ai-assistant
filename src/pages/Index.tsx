@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { KanbanBoard } from "@/components/tasks/KanbanBoard";
+import { useTaskStats } from "@/hooks/useTasks";
 import {
   CheckCircle2, Clock, AlertTriangle, FileText, Anchor, LifeBuoy, Award,
   ArrowRight, Calendar, type LucideIcon,
@@ -22,6 +24,7 @@ interface Item { code: string; name: string; description: string | null; icon: s
 const Index = () => {
   const [categories, setCategories] = useState<Item[]>([]);
   const [assignments, setAssignments] = useState<Item[]>([]);
+  const { data: stats } = useTaskStats();
 
   useEffect(() => {
     (async () => {
@@ -48,19 +51,21 @@ const Index = () => {
             <Calendar className="h-3 w-3" /> {today}
           </Badge>
         }
-      >
-        <Button variant="outline" size="sm">Xuất báo cáo</Button>
-        <Button size="sm">Họp giao ban</Button>
-      </PageHeader>
+      />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard label="Việc đang xử lý" value={12} hint="3 sắp tới hạn" icon={Clock} tone="primary" />
-        <StatCard label="Hoàn thành tuần" value={8} hint="+25% so với tuần trước" icon={CheckCircle2} tone="success" />
-        <StatCard label="Cần phê duyệt" value={5} hint="2 ưu tiên cao" icon={AlertTriangle} tone="warning" />
-        <StatCard label="Văn bản mới" value={17} hint="Trong 7 ngày" icon={FileText} tone="info" />
+        <StatCard label="Việc đang xử lý" value={stats?.open ?? 0} icon={Clock} tone="primary" />
+        <StatCard label="Hoàn thành tuần" value={stats?.doneThisWeek ?? 0} icon={CheckCircle2} tone="success" />
+        <StatCard label="Cần phê duyệt" value={stats?.review ?? 0} icon={AlertTriangle} tone="warning" />
+        <StatCard label="Quá hạn" value={stats?.overdue ?? 0} icon={AlertTriangle} tone="info" />
       </div>
 
-      {/* 3 Kiêm nhiệm — nổi bật */}
+      {/* Kanban toàn bộ */}
+      <section className="mb-10">
+        <KanbanBoard title="Bảng công việc tổng hợp" />
+      </section>
+
+      {/* 3 Kiêm nhiệm */}
       <section className="mb-8">
         <div className="flex items-end justify-between mb-3">
           <div>
