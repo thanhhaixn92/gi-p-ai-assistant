@@ -13,6 +13,7 @@ import {
 import { Loader2, Plus } from "lucide-react";
 import { useCreateTask } from "@/hooks/useTasks";
 import { PRIORITY_META, STATUS_META, STATUS_ORDER, TaskPriority, TaskStatus } from "@/types/task";
+import { DepartmentPicker } from "./DepartmentPicker";
 
 interface Item { code: string; name: string; }
 
@@ -41,6 +42,7 @@ export function CreateTaskDialog({
   const [dueDate, setDueDate] = useState<string>("");
   const [categoryCode, setCategoryCode] = useState<string>(defaultCategoryCode ?? "none");
   const [assignmentCode, setAssignmentCode] = useState<string>(defaultAssignmentCode ?? "none");
+  const [departmentCodes, setDepartmentCodes] = useState<string[]>([]);
 
   const [categories, setCategories] = useState<Item[]>([]);
   const [assignments, setAssignments] = useState<Item[]>([]);
@@ -69,23 +71,25 @@ export function CreateTaskDialog({
 
   const reset = () => {
     setTitle(""); setDescription(""); setPriority("medium"); setDueDate("");
+    setDepartmentCodes([]);
   };
 
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault();
     if (!title.trim() || createTask.isPending) return;
     try {
-    await createTask.mutateAsync({
-      title: title.trim(),
-      description: description.trim() || null,
-      status,
-      priority,
-      due_date: dueDate ? new Date(dueDate).toISOString() : null,
-      category_code: categoryCode === "none" ? null : categoryCode,
-      assignment_code: assignmentCode === "none" ? null : assignmentCode,
-    });
-    reset();
-    setOpen(false);
+      await createTask.mutateAsync({
+        title: title.trim(),
+        description: description.trim() || null,
+        status,
+        priority,
+        due_date: dueDate ? new Date(dueDate).toISOString() : null,
+        category_code: categoryCode === "none" ? null : categoryCode,
+        assignment_code: assignmentCode === "none" ? null : assignmentCode,
+        department_codes: departmentCodes,
+      });
+      reset();
+      setOpen(false);
     } catch (err) {
       console.error("Create task failed", err);
     }
@@ -171,6 +175,11 @@ export function CreateTaskDialog({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Bộ phận xử lý</Label>
+              <DepartmentPicker value={departmentCodes} onChange={setDepartmentCodes} />
             </div>
           </div>
 
