@@ -74,6 +74,60 @@ export type Database = {
         }
         Relationships: []
       }
+      notes: {
+        Row: {
+          assignment_code: string | null
+          category_code: string | null
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_code?: string | null
+          category_code?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_code?: string | null
+          category_code?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_assignment_code_fkey"
+            columns: ["assignment_code"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "notes_category_code_fkey"
+            columns: ["category_code"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
