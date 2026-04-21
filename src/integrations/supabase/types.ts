@@ -74,6 +74,30 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           assignment_code: string | null
@@ -152,12 +176,98 @@ export type Database = {
         }
         Relationships: []
       }
+      task_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number
+          storage_path: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number
+          storage_path: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number
+          storage_path?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+          role: string | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          role?: string | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          role?: string | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_contacts_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assignment_code: string | null
           category_code: string | null
           completed_at: string | null
           created_at: string
+          department_codes: string[]
           description: string | null
           due_date: string | null
           id: string
@@ -173,6 +283,7 @@ export type Database = {
           category_code?: string | null
           completed_at?: string | null
           created_at?: string
+          department_codes?: string[]
           description?: string | null
           due_date?: string | null
           id?: string
@@ -188,6 +299,7 @@ export type Database = {
           category_code?: string | null
           completed_at?: string | null
           created_at?: string
+          department_codes?: string[]
           description?: string | null
           due_date?: string | null
           id?: string
