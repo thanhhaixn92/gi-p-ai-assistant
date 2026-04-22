@@ -1,11 +1,20 @@
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Anchor, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +24,9 @@ const Auth = () => {
   const [submitting, setSubmitting] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
 
   if (!loading && user) return <Navigate to="/" replace />;
 
@@ -41,6 +53,29 @@ const Auth = () => {
     } else {
       toast.success("Tạo tài khoản thành công", { description: "Bạn có thể đăng nhập ngay." });
     }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotSubmitting(false);
+    if (error) {
+      toast.error("Không thể gửi email khôi phục", { description: error.message });
+    } else {
+      toast.success("Đã gửi liên kết khôi phục", {
+        description: "Vui lòng kiểm tra hộp thư (cả mục Spam) để đặt lại mật khẩu.",
+      });
+      setForgotOpen(false);
+      setForgotEmail("");
+    }
+  };
+
+  const openForgot = () => {
+    setForgotEmail(email);
+    setForgotOpen(true);
   };
 
   return (
@@ -73,7 +108,16 @@ const Auth = () => {
                     <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="giap@hoatieu.vn" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Mật khẩu</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Mật khẩu</Label>
+                      <button
+                        type="button"
+                        onClick={openForgot}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        Quên mật khẩu?
+                      </button>
+                    </div>
                     <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                   </div>
                   <Button type="submit" className="w-full" disabled={submitting}>
@@ -107,6 +151,39 @@ const Auth = () => {
           QĐ 143/QĐ-CTHTHHMB ngày 09/4/2026
         </p>
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent>
+          <form onSubmit={handleForgotPassword}>
+            <DialogHeader>
+              <DialogTitle>Khôi phục mật khẩu</DialogTitle>
+              <DialogDescription>
+                Nhập email tài khoản. Hệ thống sẽ gửi liên kết đặt lại mật khẩu tới hộp thư của anh.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-4">
+              <Label htmlFor="forgot-email">Email</Label>
+              <Input
+                id="forgot-email"
+                type="email"
+                required
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="giap@hoatieu.vn"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setForgotOpen(false)}>
+                Hủy
+              </Button>
+              <Button type="submit" disabled={forgotSubmitting}>
+                {forgotSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Gửi liên kết
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
