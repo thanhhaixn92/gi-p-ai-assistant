@@ -1,56 +1,68 @@
 
 
-## Bổ sung chức năng "Quên mật khẩu"
+## Bước tiếp theo đề xuất
 
-Hiện trang `/auth` chỉ có Đăng nhập / Đăng ký. Khi anh quên mật khẩu sẽ không có cách nào tự khôi phục. Em sẽ bổ sung luồng đặt lại mật khẩu qua email — tận dụng sẵn Lovable Cloud Auth, không cần cấu hình thêm.
+Hệ thống hiện đã hoàn tất các nền tảng cốt lõi:
+- **Phase 1-3**: Auth, layout, 9 lĩnh vực + 3 kiêm nhiệm theo QĐ 143
+- **Phase 4**: Notes (Markdown + tag + tìm kiếm)
+- **Phase 5**: Tasks chuyên sâu (Kanban + chi tiết + bộ phận + liên hệ + file đính kèm)
+- **Bonus**: Quên mật khẩu qua email
 
-### Luồng người dùng
+Em đề xuất ưu tiên triển khai theo thứ tự sau, dựa trên giá trị sử dụng thực tế của Phó Giám đốc trên iPad/iPhone:
 
-```text
-Trang /auth
-   │
-   ├─ [Quên mật khẩu?] (link dưới ô mật khẩu)
-   │      │
-   │      ▼
-   │   Dialog nhập email
-   │      │  → gửi email khôi phục
-   │      ▼
-   │   Toast: "Đã gửi link khôi phục tới email"
-   │
-   └─ Anh mở email → click link → mở /reset-password
-                                          │
-                                          ▼
-                                  Form đặt mật khẩu mới
-                                          │
-                                          ▼
-                                  Toast thành công → /
-```
+### Ưu tiên 1 — Phase 6: AI Assistant (khuyến nghị)
+Đây là tính năng tạo **giá trị cao nhất** cho công việc lãnh đạo hằng ngày.
 
-### Các thay đổi
+**Phạm vi**:
+- Sidebar AI mở từ Topbar (icon Sparkles), trượt từ phải sang
+- Chat tiếng Việt với system prompt đã định: "Trợ lý AI cao cấp của Phó Giám đốc Phạm Quang Giáp..."
+- 4 lệnh nhanh:
+  1. **Tạo task từ mô tả** — gõ tự nhiên ("Tuần sau họp hội đồng an toàn, chuẩn bị báo cáo Q1") → AI sinh task có tiêu đề/mô tả/lĩnh vực/ưu tiên/hạn
+  2. **Tóm tắt note** — tóm tắt ghi chú đang xem theo cấu trúc hành chính
+  3. **Phân tích báo cáo** — paste nội dung → AI đưa nhận định + gợi ý hành động
+  4. **Kế hoạch tuần** — AI quét task hiện có → đề xuất lịch tuần
+- Dùng **Lovable AI Gateway** với `google/gemini-2.5-flash` (mặc định, miễn phí 13/10–6/11/2026, sau đó rẻ)
+- Edge function `ai-chat` streaming response
+- Lưu lịch sử chat vào bảng `ai_messages` (RLS theo user)
 
-**1. `src/pages/Auth.tsx`**
-- Thêm link **"Quên mật khẩu?"** nằm ngay dưới ô mật khẩu (tab Đăng nhập).
-- Click mở Dialog nhập email → gọi `supabase.auth.resetPasswordForEmail(email, { redirectTo: \`${window.location.origin}/reset-password\` })`.
-- Hiển thị toast hướng dẫn anh kiểm tra hộp thư.
+### Ưu tiên 2 — Kéo-thả Kanban (UX nhanh)
+- Cài `@dnd-kit/core` + `@dnd-kit/sortable`
+- Kéo task giữa 5 cột (todo/doing/review/done/blocked)
+- Hỗ trợ touch trên iPad
+- Optimistic update + rollback nếu lỗi
 
-**2. `src/pages/ResetPassword.tsx`** (mới)
-- Trang công khai (không bọc `ProtectedRoute`).
-- Khi mở, Supabase tự gắn session khôi phục từ link email.
-- Form 2 ô: **Mật khẩu mới** + **Xác nhận mật khẩu** (tối thiểu 6 ký tự, phải khớp).
-- Submit → `supabase.auth.updateUser({ password })` → toast thành công → điều hướng `/`.
-- Nếu vào trang mà không có session khôi phục → hiển thị thông báo link đã hết hạn + nút quay lại `/auth`.
+### Ưu tiên 3 — View Danh sách + Lịch
+- Trang mới `/tat-ca-cong-viec`
+- **Tab Bảng**: table có sort/filter (lĩnh vực, kiêm nhiệm, ưu tiên, hạn, bộ phận, trạng thái)
+- **Tab Lịch**: calendar tháng dùng `react-day-picker` đã có sẵn — hiển thị task theo `due_date`, click ngày để xem danh sách
 
-**3. `src/App.tsx`**
-- Thêm route công khai: `<Route path="/reset-password" element={<ResetPassword />} />`.
+### Ưu tiên 4 — Hoàn thiện & polish
+- Thông báo (notification) task quá hạn / sắp đến hạn
+- Export báo cáo tuần ra PDF
+- Dark mode tuỳ chọn
+- PWA — cài đặt như app trên iPad
 
-### Lưu ý kỹ thuật
-- Dùng đúng template email mặc định của Lovable Cloud — không cần cấu hình SMTP riêng.
-- Email khôi phục sẽ gửi từ địa chỉ mặc định của hệ thống; nếu sau này anh muốn email gửi từ tên miền riêng (vd. `noreply@hoatieu.vn`) thì cần thiết lập email domain — em sẽ làm ở giai đoạn riêng.
-- Giữ nguyên thiết kế Light mode xanh dương đậm + vàng đồng đã có.
+---
 
-### Cách sử dụng sau khi triển khai
-1. Tại trang đăng nhập, click **"Quên mật khẩu?"**.
-2. Nhập email tài khoản → bấm gửi.
-3. Mở email từ Lovable Cloud → click link.
-4. Nhập mật khẩu mới 2 lần → đăng nhập lại bình thường.
+### Em khuyến nghị
+
+Triển khai ngay **Phase 6: AI Assistant** vì:
+- Đây là tính năng đặc trưng nhất của hệ thống (đã ghi rõ trong yêu cầu ban đầu)
+- Tận dụng Lovable AI miễn phí trong giai đoạn promo
+- Tăng tốc độ ra quyết định — đúng mục tiêu chính của anh
+- Tạo task bằng giọng nói tự nhiên giúp dùng nhanh trên iPhone
+
+Sau khi anh duyệt, em sẽ chuyển sang chế độ thực thi và build trong 1 lượt.
+
+### Câu hỏi xác nhận
+
+1. **Chọn ưu tiên triển khai tiếp theo?**
+   - Phase 6: AI Assistant (khuyến nghị)
+   - Kéo-thả Kanban
+   - View Danh sách + Lịch
+   - Khác (anh ghi rõ)
+
+2. **Nếu chọn AI**, lưu lịch sử chat?
+   - Có (xem lại được hội thoại cũ, tốn DB nhẹ)
+   - Không (mỗi lần mở là mới, riêng tư hơn)
 
