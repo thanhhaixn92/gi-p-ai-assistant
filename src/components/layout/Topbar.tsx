@@ -10,11 +10,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bell, LogOut, Plus, Search, Sparkles, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import { AIAssistantSheet } from "@/components/ai/AIAssistantSheet";
 import { toast } from "sonner";
 
 export function Topbar() {
   const { user, signOut } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 h-14 flex items-center gap-2 sm:gap-4 border-b bg-background/80 backdrop-blur px-3 sm:px-4">
@@ -39,9 +41,15 @@ export function Topbar() {
         <Plus className="h-4 w-4 mr-1.5" /> Tạo task
       </Button>
 
-      <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => toast.info("Trợ lý AI sắp ra mắt")}>
+      <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => setAiOpen(true)}>
         <Sparkles className="h-4 w-4 mr-1.5 text-accent" /> AI
       </Button>
+
+      <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setAiOpen(true)}>
+        <Sparkles className="h-4 w-4 text-accent" />
+      </Button>
+
+      <AIAssistantSheet open={aiOpen} onOpenChange={setAiOpen} />
 
       <Button variant="ghost" size="icon" onClick={() => toast.info("Chưa có thông báo mới")}>
         <Bell className="h-4 w-4" />
