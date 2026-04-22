@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 import CategoryPage from "./pages/CategoryPage.tsx";
 import AssignmentPage from "./pages/AssignmentPage.tsx";
 import NotesPage from "./pages/NotesPage.tsx";
@@ -23,6 +24,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/ghi-chu" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
             <Route path="/linh-vuc/:code" element={<ProtectedRoute><CategoryPage /></ProtectedRoute>} />
