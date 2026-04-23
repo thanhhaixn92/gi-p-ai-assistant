@@ -26,8 +26,47 @@ Bối cảnh hệ thống quản lý gồm 9 lĩnh vực và 3 nhiệm vụ kiê
 - Lĩnh vực (category_code): ${CATEGORY_CODES.join(", ")}.
 - Kiêm nhiệm (assignment_code): ${ASSIGNMENT_CODES.join(", ")}.
 
-Khi tóm tắt: dùng cấu trúc "Bối cảnh / Nội dung chính / Đề xuất hành động".
-Tránh suy đoán số liệu chưa có; nếu thiếu dữ kiện hãy hỏi lại ngắn gọn.`;
+Tránh suy đoán số liệu chưa có; nếu thiếu dữ kiện hãy hỏi lại ngắn gọn.
+
+==== ĐỊNH DẠNG TRẢ LỜI BẮT BUỘC ====
+Frontend của hệ thống render câu trả lời theo các KHỐI ĐẶC BIỆT bọc trong code fence. HÃY ƯU TIÊN dùng các khối này thay vì văn bản dài thuần tuý:
+
+1. \`\`\`summary
+<1-3 câu tóm tắt cốt lõi, in đậm các từ khoá quan trọng>
+\`\`\`
+→ LUÔN đặt ĐẦU câu trả lời nếu nội dung > 2 câu.
+
+2. \`\`\`checklist
+[ ] Việc cần làm 1
+[ ] Việc cần làm 2
+[x] Việc đã hoàn thành
+\`\`\`
+→ Dùng khi liệt kê việc cần làm / các bước. Mỗi dòng bắt đầu bằng "[ ]" hoặc "[x]".
+
+3. \`\`\`table
+Cột 1\tCột 2\tCột 3
+Giá trị A\tGiá trị B\tGiá trị C
+\`\`\`
+→ Dùng cho dữ liệu dạng bảng (kế hoạch tuần, phân công, so sánh...). Phân tách bằng TAB hoặc dấu "|".
+
+4. \`\`\`actions
+create_task: Tiêu đề task gợi ý
+create_note: Tiêu đề ghi chú | Nội dung ghi chú
+open: /linh-vuc/phong_chong_thien_tai
+\`\`\`
+→ Đề xuất hành động bấm 1 click. Chỉ dùng khi thực sự gợi mở hành động cụ thể.
+
+5. \`\`\`cite
+QĐ 143/2024-PGĐ, Điều 5 khoản 2
+\`\`\`
+→ Dùng khi trích dẫn căn cứ pháp lý / nguồn.
+
+NGUYÊN TẮC:
+- Nếu chỉ trả lời ngắn 1-2 câu (chào hỏi, hỏi đáp đơn giản) → trả lời thường, không cần khối.
+- Nếu trả lời có liệt kê → BẮT BUỘC dùng \`\`\`checklist.
+- Nếu có dữ liệu so sánh / lịch / phân công → BẮT BUỘC dùng \`\`\`table.
+- Văn bản giải thích bổ sung viết bằng markdown thường, đặt giữa các khối.
+- KHÔNG bọc lồng các khối vào nhau.`;
 
 const EXTRACT_SYSTEM = `${BASE_SYSTEM}
 
@@ -196,17 +235,17 @@ Deno.serve(async (req) => {
     let systemContent = BASE_SYSTEM;
     if (mode === "summarize") {
       systemContent +=
-        "\n\nNGỮ CẢNH: Tóm tắt nội dung được cung cấp theo cấu trúc hành chính 3 phần (Bối cảnh / Nội dung chính / Đề xuất hành động).";
+        "\n\nNGỮ CẢNH: Tóm tắt nội dung. Trả về 1 khối ```summary``` ngắn gọn ở đầu, sau đó ```checklist``` các điểm chính, cuối cùng ```actions``` đề xuất 1-2 hành động (vd create_task / create_note).";
     } else if (mode === "analyze") {
       systemContent +=
-        "\n\nNGỮ CẢNH: Phân tích báo cáo - đưa nhận định khách quan + 3-5 đề xuất hành động ưu tiên.";
+        "\n\nNGỮ CẢNH: Phân tích báo cáo. Trả về ```summary``` nhận định, ```table``` so sánh số liệu (nếu có), ```checklist``` 3-5 đề xuất hành động ưu tiên, và ```cite``` căn cứ.";
     } else if (mode === "weekly_plan") {
       systemContent +=
-        "\n\nNGỮ CẢNH: Lập kế hoạch tuần dạng bảng (Thứ | Buổi | Công việc | Lĩnh vực | Ưu tiên).";
+        "\n\nNGỮ CẢNH: Lập kế hoạch tuần. BẮT BUỘC trả về 1 khối ```table``` với header: Thứ\\tBuổi\\tCông việc\\tLĩnh vực\\tƯu tiên. Sau đó ```actions``` create_task cho 2-3 việc quan trọng nhất.";
     } else {
-      // chat thuần — KHÔNG yêu cầu sinh JSON nữa, vì tạo task đã chuyển sang luồng riêng
+      // chat thuần
       systemContent +=
-        '\n\nNếu người dùng mô tả 1 công việc muốn tạo task, hãy nhắc họ bấm nút "Tạo task" trong khung trợ lý để xác nhận từng trường.';
+        '\n\nNếu người dùng mô tả 1 công việc muốn tạo task, hãy gợi ý bằng khối ```actions``` với create_task: <tiêu đề>, hoặc nhắc họ bấm nút "Tạo task" trong khung trợ lý.';
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
