@@ -1,35 +1,55 @@
-// Streaming chat + structured task extraction for Phó Giám đốc Phạm Quang Giáp
+// Streaming chat + structured task extraction cho Phó Giám đốc Phạm Quang Giáp
+// Công ty TNHH MTV Hoa tiêu hàng hải miền Bắc
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const CATEGORY_CODES = [
-  "hanh_chinh_quan_tri",
-  "to_chuc_can_bo",
-  "ke_hoach_tai_chinh",
-  "khoa_hoc_cong_nghe",
-  "hop_tac_quoc_te",
-  "du_bao_canh_bao",
-  "quan_trac",
-  "thong_tin_du_lieu",
-  "dao_tao_boi_duong",
+// Danh mục thực tế trong DB — KHÔNG hardcode tên xấu nữa
+const CATEGORIES: { code: string; name: string }[] = [
+  { code: "AT_HH", name: "An toàn hàng hải" },
+  { code: "KH_KT", name: "Kỹ thuật - Công nghệ" },
+  { code: "SX_KD", name: "Sản xuất - Kinh doanh" },
+  { code: "TC_KT", name: "Tài chính - Kế toán" },
+  { code: "TC_HC", name: "Tổ chức - Hành chính" },
+  { code: "DT_XD", name: "Đầu tư - Xây dựng" },
+  { code: "PL_TT", name: "Pháp lý - Thanh tra" },
+  { code: "DN_DT", name: "Đoàn thể - Đào tạo" },
+  { code: "HT_QT", name: "Hợp tác - Quan hệ" },
 ];
-const ASSIGNMENT_CODES = ["phong_chong_thien_tai", "an_toan_lao_dong", "cai_cach_hanh_chinh"];
+
+const ASSIGNMENTS: { code: string; name: string }[] = [
+  { code: "CT_HDAT", name: "Chủ tịch Hội đồng An toàn" },
+  { code: "TR_BCH_PCTT", name: "Trưởng Ban Chỉ huy PCTT-TKCN" },
+  { code: "CT_HD_TDKT", name: "Chủ tịch Hội đồng Thi đua - Khen thưởng" },
+];
+
+const CATEGORY_CODES = CATEGORIES.map((c) => c.code);
+const ASSIGNMENT_CODES = ASSIGNMENTS.map((a) => a.code);
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 
-const BASE_SYSTEM = `Bạn là Trợ lý AI cao cấp của Phó Giám đốc Phạm Quang Giáp tại Trung tâm Khí tượng Thuỷ văn (theo Quyết định 143).
-Phong cách: tiếng Việt hành chính, ngắn gọn, chuyên nghiệp, ưu tiên gạch đầu dòng và bảng khi phù hợp.
+const TAXONOMY_BLOCK = `
+DANH MỤC LĨNH VỰC PHỤ TRÁCH (category_code → tên):
+${CATEGORIES.map((c) => `- ${c.code} = ${c.name}`).join("\n")}
 
-Bối cảnh hệ thống quản lý gồm 9 lĩnh vực và 3 nhiệm vụ kiêm nhiệm:
-- Lĩnh vực (category_code): ${CATEGORY_CODES.join(", ")}.
-- Kiêm nhiệm (assignment_code): ${ASSIGNMENT_CODES.join(", ")}.
+DANH MỤC NHIỆM VỤ KIÊM NHIỆM (assignment_code → tên):
+${ASSIGNMENTS.map((a) => `- ${a.code} = ${a.name}`).join("\n")}`;
 
-Tránh suy đoán số liệu chưa có; nếu thiếu dữ kiện hãy hỏi lại ngắn gọn.
+const BASE_SYSTEM = `Bạn là Trợ lý AI cao cấp của ông Phạm Quang Giáp — Phó Giám đốc Công ty TNHH MTV Hoa tiêu hàng hải miền Bắc (NORTHERN VIETNAM MARITIME PILOTAGE COMPANY LIMITED).
+
+Phong cách: tiếng Việt hành chính, ngắn gọn, chuyên nghiệp; ưu tiên gạch đầu dòng và bảng khi phù hợp. Tránh suy đoán số liệu chưa có; nếu thiếu dữ kiện hãy hỏi lại ngắn gọn.
+
+${TAXONOMY_BLOCK}
+
+QUY TẮC HIỂN THỊ TÊN:
+- Khi nhắc đến lĩnh vực / kiêm nhiệm trong văn bản trả lời (summary, checklist, table, cite, văn bản giải thích), LUÔN dùng TÊN ĐẦY ĐỦ tiếng Việt (vd: "An toàn hàng hải"), KHÔNG hiện mã code thô (vd: "AT_HH").
+- Chỉ dùng mã code trong khối \`\`\`actions\`\`\` ở dạng đường dẫn (ví dụ: open: /linh-vuc/AT_HH).
 
 ==== ĐỊNH DẠNG TRẢ LỜI BẮT BUỘC ====
-Frontend của hệ thống render câu trả lời theo các KHỐI ĐẶC BIỆT bọc trong code fence. HÃY ƯU TIÊN dùng các khối này thay vì văn bản dài thuần tuý:
+Frontend render câu trả lời theo các KHỐI ĐẶC BIỆT bọc trong code fence. HÃY ƯU TIÊN dùng các khối này thay vì văn bản dài:
 
 1. \`\`\`summary
 <1-3 câu tóm tắt cốt lõi, in đậm các từ khoá quan trọng>
@@ -52,7 +72,7 @@ Giá trị A\tGiá trị B\tGiá trị C
 4. \`\`\`actions
 create_task: Tiêu đề task gợi ý
 create_note: Tiêu đề ghi chú | Nội dung ghi chú
-open: /linh-vuc/phong_chong_thien_tai
+open: /linh-vuc/AT_HH
 \`\`\`
 → Đề xuất hành động bấm 1 click. Chỉ dùng khi thực sự gợi mở hành động cụ thể.
 
@@ -62,25 +82,26 @@ QĐ 143/2024-PGĐ, Điều 5 khoản 2
 → Dùng khi trích dẫn căn cứ pháp lý / nguồn.
 
 NGUYÊN TẮC:
-- Nếu chỉ trả lời ngắn 1-2 câu (chào hỏi, hỏi đáp đơn giản) → trả lời thường, không cần khối.
-- Nếu trả lời có liệt kê → BẮT BUỘC dùng \`\`\`checklist.
-- Nếu có dữ liệu so sánh / lịch / phân công → BẮT BUỘC dùng \`\`\`table.
+- Trả lời ngắn 1-2 câu (chào hỏi, hỏi đáp đơn giản) → trả lời thường, không cần khối.
+- Có liệt kê việc → BẮT BUỘC dùng \`\`\`checklist\`\`\`.
+- Có dữ liệu so sánh / lịch / phân công → BẮT BUỘC dùng \`\`\`table\`\`\`.
 - Văn bản giải thích bổ sung viết bằng markdown thường, đặt giữa các khối.
 - KHÔNG bọc lồng các khối vào nhau.`;
 
 const EXTRACT_SYSTEM = `${BASE_SYSTEM}
 
 NHIỆM VỤ HIỆN TẠI: Người dùng mô tả 1 công việc cần tạo task. Hãy GỌI HÀM extract_task để trả về dữ liệu có cấu trúc.
-Quy tắc:
+
+Quy tắc bắt buộc:
 - title: ngắn gọn ≤ 120 ký tự, viết hoa chữ cái đầu, không kết thúc bằng dấu chấm.
-- description: chi tiết tiếng Việt, có thể nhiều dòng, có thể để trống nếu user không nói thêm.
+- description: chi tiết tiếng Việt — TỰ ĐỘNG TỔNG HỢP từ thông tin user cung cấp + suy luận hợp lý (mục đích, đầu việc cụ thể, lưu ý). Tối thiểu 1 câu, có thể nhiều dòng.
 - priority: low|medium|high|urgent (mặc định medium; "gấp/khẩn/ngay" → urgent; "quan trọng" → high).
-- category_code: chỉ dùng đúng 1 mã trong danh sách Lĩnh vực, hoặc null.
-- assignment_code: chỉ dùng đúng 1 mã trong danh sách Kiêm nhiệm, hoặc null.
-- LƯU Ý: chỉ chọn MỘT trong category_code HOẶC assignment_code, cái còn lại PHẢI null.
+- category_code: chỉ dùng đúng 1 mã trong CATEGORY_CODES, hoặc null. Khi user nhắc tới hoa tiêu / luồng tàu / cảng → AT_HH; tới tài chính / kế toán / ngân sách → TC_KT; nhân sự / tổ chức / hành chính → TC_HC; đầu tư / xây dựng / dự án → DT_XD; pháp lý / thanh tra / kiểm tra → PL_TT; đoàn thể / đào tạo / công đoàn → DN_DT; hợp tác / đối ngoại / quốc tế → HT_QT; sản xuất / doanh thu / khách hàng → SX_KD; kỹ thuật / thiết bị / công nghệ → KH_KT.
+- assignment_code: chỉ dùng đúng 1 mã trong ASSIGNMENT_CODES, hoặc null. PCTT / phòng chống thiên tai / cứu nạn → TR_BCH_PCTT; thi đua / khen thưởng → CT_HD_TDKT; hội đồng an toàn / cấp phép an toàn → CT_HDAT.
+- LƯU Ý NGHIÊM NGẶT: chỉ chọn MỘT trong category_code HOẶC assignment_code, cái còn lại PHẢI null.
 - due_date: ISO 8601 (vd "2026-04-30T17:00:00.000Z") nếu suy luận được, ngược lại null. Quy ước: "ngày mai" = +1 ngày 17:00, "tuần sau" = thứ 2 tuần kế tiếp 09:00, "cuối tuần" = chủ nhật 17:00, "cuối tháng" = ngày cuối tháng 17:00.
 - confidence: 0..1 — độ tự tin về việc đã hiểu đúng yêu cầu.
-- missing_fields: liệt kê các trường người dùng CHƯA nói rõ (vd ["due_date", "category_code"]).
+- missing_fields: chỉ liệt kê các trường user thực sự CHƯA cung cấp đủ tín hiệu để suy luận (vd ["due_date"] nếu không có manh mối thời gian).
 - clarifying_question: câu hỏi ngắn (≤ 1 câu) gợi ý người dùng bổ sung — hoặc chuỗi rỗng nếu đã đủ.`;
 
 const EXTRACT_TOOL = {
@@ -131,10 +152,38 @@ const EXTRACT_TOOL = {
   },
 };
 
+async function authenticate(req: Request): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Chưa đăng nhập" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims?.sub) {
+    return new Response(JSON.stringify({ error: "Phiên đăng nhập không hợp lệ" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  return { userId: data.claims.sub as string };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Xác thực JWT user trước khi xử lý
+    const auth = await authenticate(req);
+    if (auth instanceof Response) return auth;
+
     const { messages, mode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY chưa cấu hình");
@@ -241,7 +290,7 @@ Deno.serve(async (req) => {
         "\n\nNGỮ CẢNH: Phân tích báo cáo. Trả về ```summary``` nhận định, ```table``` so sánh số liệu (nếu có), ```checklist``` 3-5 đề xuất hành động ưu tiên, và ```cite``` căn cứ.";
     } else if (mode === "weekly_plan") {
       systemContent +=
-        "\n\nNGỮ CẢNH: Lập kế hoạch tuần. BẮT BUỘC trả về 1 khối ```table``` với header: Thứ\\tBuổi\\tCông việc\\tLĩnh vực\\tƯu tiên. Sau đó ```actions``` create_task cho 2-3 việc quan trọng nhất.";
+        "\n\nNGỮ CẢNH: Lập kế hoạch tuần. BẮT BUỘC trả về 1 khối ```table``` với header: Thứ\\tBuổi\\tCông việc\\tLĩnh vực\\tƯu tiên. Cột Lĩnh vực dùng TÊN TIẾNG VIỆT đầy đủ (vd: \"An toàn hàng hải\"), KHÔNG dùng mã. Sau đó ```actions``` create_task cho 2-3 việc quan trọng nhất.";
     } else {
       // chat thuần
       systemContent +=
