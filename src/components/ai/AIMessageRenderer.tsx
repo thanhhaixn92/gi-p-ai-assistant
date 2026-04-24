@@ -7,6 +7,7 @@ import { AIChecklistBlock } from "./AIChecklistBlock";
 import { AITableBlock } from "./AITableBlock";
 import { AIActionButtons } from "./AIActionButtons";
 import { toast } from "sonner";
+import { useTaxonomies, prettifyCodes } from "@/hooks/useTaxonomies";
 
 type BlockType = "summary" | "checklist" | "table" | "actions" | "cite" | "text";
 
@@ -74,7 +75,12 @@ function CodeWithCopy({ children, className }: any) {
 }
 
 export function AIMessageRenderer({ content, isStreaming, onCreateTask }: Props) {
-  const blocks = useMemo(() => parseBlocks(content), [content]);
+  const { data: tax } = useTaxonomies();
+  const codeMap = tax?.codeToName ?? new Map<string, string>();
+
+  // Prettify mã code → tên tiếng Việt cho mọi nội dung văn bản (trừ block actions giữ path)
+  const prettyContent = useMemo(() => prettifyCodes(content, codeMap), [content, codeMap]);
+  const blocks = useMemo(() => parseBlocks(prettyContent), [prettyContent]);
   const [expanded, setExpanded] = useState(false);
 
   if (!content) {
@@ -82,12 +88,12 @@ export function AIMessageRenderer({ content, isStreaming, onCreateTask }: Props)
   }
 
   // Nếu rất dài và chưa expanded → chỉ render phần đầu
-  const isLong = content.length > LONG_THRESHOLD;
-  const visibleContent = isLong && !expanded ? content.slice(0, LONG_THRESHOLD) : content;
+  const isLong = prettyContent.length > LONG_THRESHOLD;
+  const visibleContent = isLong && !expanded ? prettyContent.slice(0, LONG_THRESHOLD) : prettyContent;
   const visibleBlocks = isLong && !expanded ? parseBlocks(visibleContent) : blocks;
 
   const handleCopyText = () => {
-    navigator.clipboard.writeText(content);
+    navigator.clipboard.writeText(prettyContent);
     toast.success("Đã sao chép");
   };
 
@@ -165,7 +171,7 @@ export function AIMessageRenderer({ content, isStreaming, onCreateTask }: Props)
             {expanded ? (
               <><ChevronUp className="h-3 w-3 mr-1" /> Thu gọn</>
             ) : (
-              <><ChevronDown className="h-3 w-3 mr-1" /> Mở rộng ({content.length - LONG_THRESHOLD} ký tự)</>
+              <><ChevronDown className="h-3 w-3 mr-1" /> Mở rộng ({prettyContent.length - LONG_THRESHOLD} ký tự)</>
             )}
           </Button>
           <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleCopyText}>
