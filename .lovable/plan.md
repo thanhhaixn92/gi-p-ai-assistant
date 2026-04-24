@@ -1,102 +1,96 @@
 
 
-## Nâng cấp giao diện hiển thị kết quả AI
+## Kế hoạch tích hợp tài liệu V5: Trợ lý điều hành & biên tập số
 
-Hiện tại tin nhắn AI hiển thị markdown thô khá đơn điệu, dày đặc, khó scan. Em sẽ thiết kế lại theo hướng **"thẻ tổng hợp + checklist tương tác"** — ưu tiên tóm tắt, hành động click được, đẹp mắt trên iPad.
+Tài liệu anh tải lên gồm 18 bước rất chi tiết. Em đề xuất chia thành **5 giai đoạn**, gửi từng giai đoạn để Lovable thực hiện — tránh vỡ build vì làm quá nhiều một lúc.
 
-### 1. Phân loại nội dung trả lời
+### Phát hiện quan trọng (đã kiểm tra DB)
 
-Edge function `ai-chat` sẽ được hướng dẫn (qua system prompt) để cấu trúc câu trả lời theo 5 khối tiêu chuẩn, mỗi khối bọc trong fence đặc biệt để frontend nhận dạng:
+DB hiện đã có **đúng 9 lĩnh vực + 3 chức danh** theo tài liệu:
+- `AT_HH, KH_KT, SX_KD, TC_KT, TC_HC, DT_XD, PL_TT, DN_DT, HT_QT`
+- `CT_HDAT, TR_BCH_PCTT, CT_HD_TDKT`
 
-| Khối | Fence | Khi dùng |
-|---|---|---|
-| **Tóm tắt** | ` ```summary ` | Câu trả lời ngắn, in đậm — luôn xuất hiện đầu tiên |
-| **Checklist** | ` ```checklist ` | Danh sách việc cần làm, mỗi dòng `[ ] Nội dung` — render thành checkbox click tick |
-| **Bảng** | ` ```table ` | TSV/markdown table — render thành Table component đẹp |
-| **Hành động** | ` ```actions ` | Nút bấm: `create_task: ...`, `create_note: ...`, `open: /linh-vuc/xxx` |
-| **Trích dẫn** | ` ```cite ` | Nguồn / căn cứ pháp lý |
+Nhưng `supabase/functions/ai-chat/index.ts` đang **hardcode SAI** danh mục cho một "Trung tâm Khí tượng Thuỷ văn" tưởng tượng → AI không bao giờ gán đúng lĩnh vực. **Đây là lỗi nghiêm trọng nhất, sửa trước.**
 
-Phần văn bản còn lại render markdown thường (đã có `react-markdown`).
+---
 
-### 2. Component mới `AIMessageRenderer`
+### Giai đoạn 1 — Sửa bối cảnh & bảo mật AI (làm trong lượt tới)
 
-```text
-┌─ Tin nhắn AI ─────────────────────────┐
-│ 💡 Tóm tắt (badge primary)             │
-│   Kế hoạch tuần tới gồm 3 nhóm việc... │
-├────────────────────────────────────────┤
-│ ☐ Hoàn thiện báo cáo Q1   [+ Task]    │
-│ ☐ Họp giao ban thứ 2       [+ Task]    │
-│ ☑ Duyệt văn bản 143/QĐ              │
-│   (tick để đánh dấu đã xử lý)          │
-├────────────────────────────────────────┤
-│ 📊 Bảng phân công                      │
-│ ┌────────┬──────┬─────┐                │
-│ │Lĩnh vực│Người │Hạn  │                │
-│ └────────┴──────┴─────┘                │
-├────────────────────────────────────────┤
-│ [📌 Tạo task: "Hoàn thiện..."]         │
-│ [📝 Lưu thành ghi chú]                 │
-│ [→ Mở Lĩnh vực An toàn]                │
-├────────────────────────────────────────┤
-│ 📚 Căn cứ: QĐ 143/2024-PGĐ            │
-└────────────────────────────────────────┘
-                       09:42 · Gemini Flash
-```
+**Bước 2 + 3 + 16 trong tài liệu.** Nhanh, ít rủi ro, đem lại giá trị tức thì.
 
-**Tính năng cụ thể**:
-- Mỗi dòng checklist có icon **[+]** bên phải → click mở `AITaskBuilder` với title được điền sẵn
-- Tick checkbox → trạng thái lưu local (chỉ visual, không ghi DB) — giúp anh đánh dấu đã làm khi đọc
-- Bảng dùng component `Table` của shadcn, có border xanh-vàng theo theme
-- Khối Hành động render thành Button group, parser hiểu cú pháp `create_task: ...` / `create_note: ...` / `open: /path`
-- Trích dẫn hiển thị nhỏ, italic, có icon BookOpen
-
-### 3. Cập nhật bubble tin nhắn
-
-- Avatar AI tròn có gradient xanh→vàng + icon Sparkles
-- Tin nhắn user: bubble bo tròn nhỏ, nền xanh đậm, chữ trắng, căn phải
-- Tin nhắn AI: card nền trắng, viền mỏng, có **timestamp + tên model** ở góc dưới
-- Nội dung dài tự động gắn nút **"Thu gọn / Mở rộng"** khi > 400 chữ
-- Code block markdown thường: nền xám, có nút copy ở góc
-
-### 4. Quick replies dưới mỗi tin nhắn AI
-
-Dựa vào nội dung trả lời, tự động hiện 2–3 chip gợi ý câu hỏi tiếp theo:
-- `[ Phân tích sâu hơn ]` `[ Tạo kế hoạch tuần ]` `[ Tóm tắt ngắn lại ]`
-
-Click chip → tự gửi prompt tương ứng.
-
-### 5. Cải thiện input + loading
-
-- Khung nhập: gắn nút mic 🎙️ (placeholder cho voice input — sẽ làm phase sau)
-- Loading: skeleton 3 dòng với shimmer animation thay cho dấu `...` thô
-- Khi AI đang stream: hiện cursor nhấp nháy cuối dòng
-
-### 6. File chỉnh sửa
-
-| File | Thay đổi |
+| File | Việc |
 |---|---|
-| `src/components/ai/AIMessageRenderer.tsx` | **Mới** — parse fence + render từng khối |
-| `src/components/ai/AIChecklistBlock.tsx` | **Mới** — checklist tương tác có nút "+ Task" |
-| `src/components/ai/AIActionButtons.tsx` | **Mới** — render nút từ khối actions |
-| `src/components/ai/AITableBlock.tsx` | **Mới** — bảng đẹp dùng shadcn Table |
-| `src/components/ai/AIAssistantSheet.tsx` | Thay markdown thô bằng `<AIMessageRenderer>`, thêm avatar + quick replies + skeleton loading |
-| `supabase/functions/ai-chat/index.ts` | Cập nhật system prompt: hướng dẫn AI dùng fence ` ```summary `, ` ```checklist `, ` ```table `, ` ```actions `, ` ```cite ` |
+| `supabase/functions/ai-chat/index.ts` | Thay context "Khí tượng Thuỷ văn" → "Công ty TNHH MTV Hoa tiêu hàng hải miền Bắc". Thay danh mục hardcode sai bằng đúng 9 mã `AT_HH...HT_QT` + 3 mã `CT_HDAT...`. Ràng buộc AI: chỉ chọn 1 trong category/assignment, không chọn cả hai. Yêu cầu trả lời dùng **tên tiếng Việt đầy đủ**, không hiện code thô. Xác thực JWT user trước khi xử lý. |
+| `src/components/ai/AIAssistantSheet.tsx` | Đổi cách gọi edge function từ `apikey` sang `Authorization: Bearer <session.access_token>` để function biết user. |
+| `src/components/ai/AIMessageRenderer.tsx` + `AIChecklistBlock.tsx` | Util `prettifyCodes()` map `AT_HH` → "An toàn hàng hải" trong text hiển thị. Fetch sẵn taxonomies qua hook mới `useTaxonomies.ts`. |
+| `src/components/ai/AITaskBuilder.tsx` | Tự tick hết các trường AI đề xuất, nút "Tạo task" luôn enabled khi có title, bỏ tick = dùng default an toàn (priority=medium, code=null...). |
 
-### 7. Lưu ý kỹ thuật
+**Kết quả**: AI gán đúng lĩnh vực, hiển thị tên đẹp, tạo task linh hoạt 1 cú click.
 
-- Parser dùng regex `/```(summary|checklist|table|actions|cite)\n([\s\S]*?)```/g` để tách khối, phần còn lại đẩy vào `react-markdown`
-- Checkbox state lưu trong `useState` của bubble — refresh mất, đúng ý "chỉ visual"
-- Nút "+ Task" mở `AITaskBuilder` với `userPrompt` = nội dung dòng checklist (tận dụng luồng 3 bước có sẵn)
-- Action `create_note: <title> | <content>` gọi `useCreateNote` đã có trong `useNotes.ts`
-- Action `open: /path` dùng `useNavigate` của react-router
-- Tương thích ngược: nếu AI trả lời không có fence (câu chat thường), vẫn render markdown như cũ — không vỡ UI
+---
 
-### 8. Sau khi triển khai anh sẽ thấy
+### Giai đoạn 2 — Trang Cài đặt AI (Bước 16)
 
-1. AI trả lời có **thẻ Tóm tắt** ngay đầu — đọc 1 giây hiểu ý chính
-2. Mỗi việc cần làm thành dòng checklist, click **[+]** tạo task ngay không cần copy-paste
-3. Bảng dữ liệu (vd. phân công, kế hoạch tuần) hiển thị gọn gàng thay vì pipe `|` xấu xí
-4. Chip gợi ý dưới mỗi câu trả lời giúp hỏi tiếp nhanh
-5. Giao diện đồng bộ với theme xanh dương + vàng đồng hiện tại
+| File | Việc |
+|---|---|
+| Migration | Bảng `ai_settings` (per-user) — model, temperature, custom_system_prompt, max_history, tone... + RLS |
+| `src/pages/AISettingsPage.tsx` (mới) | UI 4 nhóm card: Model / Phong cách / Ngữ cảnh cá nhân / Lịch sử |
+| `src/hooks/useAISettings.ts` (mới) | Fetch + mutation TanStack Query |
+| `src/components/layout/AppSidebar.tsx` | Thêm mục "Cài đặt AI" |
+| `src/App.tsx` | Route `/cai-dat-ai` (ProtectedRoute) |
+| `supabase/functions/ai-chat/index.ts` | Đọc `ai_settings` của user, áp model/temperature/custom_prompt động |
+
+---
+
+### Giai đoạn 3 — Module Trợ lý biên tập: Schema + Khung trang (Bước 4 + 5 + 6)
+
+Đây là module **lớn nhất**. Giai đoạn này chỉ tạo nền:
+
+| Việc | Chi tiết |
+|---|---|
+| Migration `editorial_module.sql` | 5 bảng: `editorial_sessions`, `editorial_sources`, `editorial_versions`, `editorial_images`, `editorial_exports`. 6 enums. RLS theo user_id. Index theo session_id, review_status, quality_status. |
+| Storage | 2 bucket private: `editorial-files` (50MB), `editorial-images` (20MB). Policy theo `{user_id}/{session_id}/...`. |
+| `src/types/editorial.ts` | `EditorialSession`, `EditorialSource`, `EditorialVersion`, `EditorialImage`, `EditorialImagePlan`, `EditorialImageAnalysis`, `EditorialPublishAudit`. |
+| `src/pages/EditorialPage.tsx` | Khung trang `/bien-tap`: form yêu cầu, chọn loại bài (7 loại), chọn task (6 loại), chọn tone, danh sách phiên đã lưu. |
+| `src/services/editorialService.ts` | CRUD session + source + version qua Supabase. |
+| `src/App.tsx` + `AppSidebar.tsx` | Thêm route `/bien-tap` + menu "Trợ lý biên tập". |
+
+**Chưa làm**: tạo bài bằng AI, hình minh họa, export. Để giai đoạn 4-5.
+
+---
+
+### Giai đoạn 4 — Sinh bài + Quản lý hình minh họa (Bước 7 + 8 + 9 + 11 + 12)
+
+| Việc | Chi tiết |
+|---|---|
+| `supabase/functions/editorial-ai/index.ts` | Action: `generate_article`, `edit_article`, `summarize_sources`, `proofread`, `expand`, `shorten`, `normalize_tone`. Dùng Lovable AI gateway (Gemini). |
+| `supabase/functions/editorial-images/index.ts` | Action: `analyze_plan`, `generate_one`, `audit_image`. Lưu ảnh vào bucket. Mặc định ảnh mới = `suggested`. |
+| `supabase/functions/fetch-link-text/index.ts` | Fetch link an toàn: chặn private IP, metadata service, giới hạn redirect/timeout/size. |
+| `src/services/editorialImageUtils.ts` | `analyzeEditorialImages`, `findImagePlaceholders`, `getValidImages`, `getBrokenImages`, `removeResolvedImagePlaceholders`, `hasApprovedImageForParagraph`. |
+| `src/modules/editorial/EditorialImageControlPanel.tsx` | UI: nút Phân tích, Lập kế hoạch, Tạo hình, danh sách ảnh + nút Duyệt/Loại/Sửa caption. |
+| `src/modules/editorial/EditorialPreview.tsx` | Preview ẩn ảnh lỗi/rejected, gắn nhãn "Chờ duyệt" cho `suggested`, ẩn placeholder khi đã có ảnh approved. |
+
+---
+
+### Giai đoạn 5 — Export Word/PDF + Lưu phiên + Nghiệm thu (Bước 13 + 14 + 15 + 17 + 18)
+
+| Việc | Chi tiết |
+|---|---|
+| `src/services/exportService.ts` | Xuất DOCX (Times New Roman, cỡ 13-14, căn đều, caption dưới ảnh) — chỉ lấy ảnh `approved`. PDF qua print-friendly CSS. |
+| `src/services/editorialPublishUtils.ts` | `EditorialPublishAudit`: đếm approved/suggested/rejected, `canExport` flag. |
+| Logic lưu phiên | Auto-save debounced. Mở lại phiên: phục hồi ảnh + caption + trạng thái duyệt nguyên vẹn. Tạo `editorial_versions` snapshot khi sinh/sửa lớn. |
+| `README.md` + `docs/HUONG_DAN_VAN_HANH.md` | Mục tiêu, module, cấu trúc, cách chạy local, cấu hình Supabase, deploy edge functions, xử lý lỗi thường gặp. |
+| Nghiệm thu | Bảng đối chiếu 20 tiêu chí PHẦN C (RLS, không lộ key, ảnh không dấu hỏi, build pass...). |
+
+---
+
+### Câu hỏi xác nhận trước khi triển khai
+
+1. **Ưu tiên thực hiện theo thứ tự nào?**
+   - Em đề xuất: **Giai đoạn 1 trước** (sửa lỗi nghiêm trọng AI dùng sai context) → rồi 2 → 3 → 4 → 5.
+   - Mỗi giai đoạn 1 lượt build, anh review preview rồi mới gửi giai đoạn tiếp.
+
+2. **Module Trợ lý biên tập (giai đoạn 3-5)** là phần lớn nhất, ước lượng ~3-4 lượt build độc lập. Anh có muốn em làm hết trong session này, hay chỉ làm Giai đoạn 1+2 trước (sửa AI hiện có), rồi anh dùng thử vài ngày trước khi build module mới?
+
+3. **GEMINI API**: Tài liệu nói "đọc từ Supabase Secrets". Hiện app đang dùng `LOVABLE_API_KEY` (Lovable AI Gateway) cho Gemini — vốn đã an toàn server-side. Em đề xuất **giữ Lovable AI Gateway** cho text/chat (không cần thêm secret), chỉ dùng Gemini API riêng nếu cần model image cao cấp ở Giai đoạn 4. Anh đồng ý chứ?
 
