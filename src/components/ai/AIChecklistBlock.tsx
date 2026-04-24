@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Plus, ListChecks } from "lucide-react";
+import { useTaxonomies, prettifyCodes } from "@/hooks/useTaxonomies";
 
 interface Props {
   raw: string;
@@ -30,7 +31,12 @@ function parseChecklist(raw: string): Item[] {
 }
 
 export function AIChecklistBlock({ raw, onCreateTask }: Props) {
-  const items = parseChecklist(raw);
+  const { data: tax } = useTaxonomies();
+  const codeMap = tax?.codeToName ?? new Map<string, string>();
+  const items = parseChecklist(raw).map((it) => ({
+    ...it,
+    text: prettifyCodes(it.text, codeMap),
+  }));
   const [checked, setChecked] = useState<boolean[]>(() => items.map((i) => i.initialChecked));
 
   if (items.length === 0) return null;
