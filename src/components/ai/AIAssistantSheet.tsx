@@ -135,11 +135,19 @@ export function AIAssistantSheet({ open, onOpenChange }: AIAssistantSheetProps) 
       const history = messages
         .filter((m): m is Extract<Msg, { kind: "text" }> => m.kind === "text")
         .map((m) => ({ role: m.role, content: m.content }));
+      // Lấy access token thực của user để edge function biết user
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
+        setLoading(false);
+        return;
+      }
       const resp = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           messages: [...history, { role: "user", content }],
