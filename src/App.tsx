@@ -28,6 +28,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/ghi-chu" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+            <Route path="/cai-dat-ai" element={<ProtectedRoute><AISettingsPage /></ProtectedRoute>} />
             <Route path="/linh-vuc/:code" element={<ProtectedRoute><CategoryPage /></ProtectedRoute>} />
             <Route path="/kiem-nhiem/:code" element={<ProtectedRoute><AssignmentPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
