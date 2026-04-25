@@ -152,7 +152,45 @@ const EXTRACT_TOOL = {
   },
 };
 
-async function authenticate(req: Request): Promise<{ userId: string } | Response> {
+type AISettings = {
+  model: string;
+  temperature: number;
+  tone: string;
+  max_history: number;
+  custom_system_prompt: string;
+  personal_context: string;
+  auto_create_tasks: boolean;
+};
+
+const DEFAULT_SETTINGS: AISettings = {
+  model: "google/gemini-2.5-flash",
+  temperature: 0.7,
+  tone: "professional",
+  max_history: 20,
+  custom_system_prompt: "",
+  personal_context: "",
+  auto_create_tasks: true,
+};
+
+const ALLOWED_MODELS = new Set([
+  "google/gemini-2.5-pro",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-lite",
+  "openai/gpt-5",
+  "openai/gpt-5-mini",
+  "openai/gpt-5-nano",
+]);
+
+const TONE_HINTS: Record<string, string> = {
+  professional: "Phong cách: hành chính chuyên nghiệp, trang trọng, súc tích.",
+  friendly: "Phong cách: thân thiện, gần gũi, vẫn lịch sự và rõ ràng.",
+  concise: "Phong cách: cực ngắn gọn, trả lời thẳng vào ý chính, ưu tiên gạch đầu dòng tối giản.",
+  detailed: "Phong cách: chi tiết, giải thích đầy đủ, có ví dụ và bối cảnh khi cần.",
+};
+
+async function authenticate(
+  req: Request,
+): Promise<{ userId: string; supabase: ReturnType<typeof createClient> } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Chưa đăng nhập" }), {
@@ -166,14 +204,51 @@ async function authenticate(req: Request): Promise<{ userId: string } | Response
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims?.sub) {
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user?.id) {
     return new Response(JSON.stringify({ error: "Phiên đăng nhập không hợp lệ" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId: data.claims.sub as string };
+  return { userId: data.user.id, supabase };
+}
+
+async function loadSettings(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<AISettings> {
+  const { data } = await supabase
+    .from("ai_settings")
+    .select("model,temperature,tone,max_history,custom_system_prompt,personal_context,auto_create_tasks")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data) return DEFAULT_SETTINGS;
+  return {
+    model: ALLOWED_MODELS.has(data.model) ? data.model : DEFAULT_SETTINGS.model,
+    temperature: typeof data.temperature === "number" ? data.temperature : DEFAULT_SETTINGS.temperature,
+    tone: data.tone ?? DEFAULT_SETTINGS.tone,
+    max_history: typeof data.max_history === "number" ? data.max_history : DEFAULT_SETTINGS.max_history,
+    custom_system_prompt: data.custom_system_prompt ?? "",
+    personal_context: data.personal_context ?? "",
+    auto_create_tasks: data.auto_create_tasks ?? true,
+  };
+}
+
+function buildSystem(base: string, settings: AISettings): string {
+  const blocks = [base];
+  const toneHint = TONE_HINTS[settings.tone];
+  if (toneHint) blocks.push(`PHONG CÁCH RIÊNG: ${toneHint}`);
+  if (settings.personal_context.trim()) {
+    blocks.push(`BỐI CẢNH CÁ NHÂN (từ người dùng):\n${settings.personal_context.trim()}`);
+  }
+  if (settings.custom_system_prompt.trim()) {
+    blocks.push(`CHỈ DẪN BỔ SUNG (từ người dùng):\n${settings.custom_system_prompt.trim()}`);
+  }
+  if (!settings.auto_create_tasks) {
+    blocks.push("LƯU Ý: KHÔNG tự động đề xuất khối ```actions``` create_task; chỉ đề xuất khi user yêu cầu rõ ràng.");
+  }
+  return blocks.join("\n\n");
 }
 
 Deno.serve(async (req) => {
