@@ -364,21 +364,22 @@ Deno.serve(async (req) => {
     }
 
     // ==== Các mode còn lại: streaming chat thông thường ====
-    let systemContent = BASE_SYSTEM;
+    let baseSystem = BASE_SYSTEM;
     if (mode === "summarize") {
-      systemContent +=
+      baseSystem +=
         "\n\nNGỮ CẢNH: Tóm tắt nội dung. Trả về 1 khối ```summary``` ngắn gọn ở đầu, sau đó ```checklist``` các điểm chính, cuối cùng ```actions``` đề xuất 1-2 hành động (vd create_task / create_note).";
     } else if (mode === "analyze") {
-      systemContent +=
+      baseSystem +=
         "\n\nNGỮ CẢNH: Phân tích báo cáo. Trả về ```summary``` nhận định, ```table``` so sánh số liệu (nếu có), ```checklist``` 3-5 đề xuất hành động ưu tiên, và ```cite``` căn cứ.";
     } else if (mode === "weekly_plan") {
-      systemContent +=
+      baseSystem +=
         "\n\nNGỮ CẢNH: Lập kế hoạch tuần. BẮT BUỘC trả về 1 khối ```table``` với header: Thứ\\tBuổi\\tCông việc\\tLĩnh vực\\tƯu tiên. Cột Lĩnh vực dùng TÊN TIẾNG VIỆT đầy đủ (vd: \"An toàn hàng hải\"), KHÔNG dùng mã. Sau đó ```actions``` create_task cho 2-3 việc quan trọng nhất.";
     } else {
       // chat thuần
-      systemContent +=
+      baseSystem +=
         '\n\nNếu người dùng mô tả 1 công việc muốn tạo task, hãy gợi ý bằng khối ```actions``` với create_task: <tiêu đề>, hoặc nhắc họ bấm nút "Tạo task" trong khung trợ lý.';
     }
+    const systemContent = buildSystem(baseSystem, settings);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -387,9 +388,10 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: settings.model,
+        temperature: settings.temperature,
         stream: true,
-        messages: [{ role: "system", content: systemContent }, ...messages],
+        messages: [{ role: "system", content: systemContent }, ...trimmedMessages],
       }),
     });
 
