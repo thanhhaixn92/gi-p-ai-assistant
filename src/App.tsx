@@ -11,6 +11,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import CategoryPage from "./pages/CategoryPage.tsx";
 import AssignmentPage from "./pages/AssignmentPage.tsx";
 import NotesPage from "./pages/NotesPage.tsx";
+import AISettingsPage from "./pages/AISettingsPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
