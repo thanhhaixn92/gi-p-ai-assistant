@@ -152,7 +152,45 @@ const EXTRACT_TOOL = {
   },
 };
 
-async function authenticate(req: Request): Promise<{ userId: string } | Response> {
+type AISettings = {
+  model: string;
+  temperature: number;
+  tone: string;
+  max_history: number;
+  custom_system_prompt: string;
+  personal_context: string;
+  auto_create_tasks: boolean;
+};
+
+const DEFAULT_SETTINGS: AISettings = {
+  model: "google/gemini-2.5-flash",
+  temperature: 0.7,
+  tone: "professional",
+  max_history: 20,
+  custom_system_prompt: "",
+  personal_context: "",
+  auto_create_tasks: true,
+};
+
+const ALLOWED_MODELS = new Set([
+  "google/gemini-2.5-pro",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-lite",
+  "openai/gpt-5",
+  "openai/gpt-5-mini",
+  "openai/gpt-5-nano",
+]);
+
+const TONE_HINTS: Record<string, string> = {
+  professional: "Phong cách: hành chính chuyên nghiệp, trang trọng, súc tích.",
+  friendly: "Phong cách: thân thiện, gần gũi, vẫn lịch sự và rõ ràng.",
+  concise: "Phong cách: cực ngắn gọn, trả lời thẳng vào ý chính, ưu tiên gạch đầu dòng tối giản.",
+  detailed: "Phong cách: chi tiết, giải thích đầy đủ, có ví dụ và bối cảnh khi cần.",
+};
+
+async function authenticate(
+  req: Request,
+): Promise<{ userId: string; supabase: any } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Chưa đăng nhập" }), {
@@ -166,14 +204,49 @@ async function authenticate(req: Request): Promise<{ userId: string } | Response
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims?.sub) {
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user?.id) {
     return new Response(JSON.stringify({ error: "Phiên đăng nhập không hợp lệ" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  return { userId: data.claims.sub as string };
+  return { userId: data.user.id, supabase };
+}
+
+async function loadSettings(supabase: any, userId: string): Promise<AISettings> {
+  const { data } = await supabase
+    .from("ai_settings")
+    .select("model,temperature,tone,max_history,custom_system_prompt,personal_context,auto_create_tasks")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data) return DEFAULT_SETTINGS;
+  const row = data as Record<string, any>;
+  return {
+    model: typeof row.model === "string" && ALLOWED_MODELS.has(row.model) ? row.model : DEFAULT_SETTINGS.model,
+    temperature: typeof row.temperature === "number" ? row.temperature : DEFAULT_SETTINGS.temperature,
+    tone: typeof row.tone === "string" ? row.tone : DEFAULT_SETTINGS.tone,
+    max_history: typeof row.max_history === "number" ? row.max_history : DEFAULT_SETTINGS.max_history,
+    custom_system_prompt: typeof row.custom_system_prompt === "string" ? row.custom_system_prompt : "",
+    personal_context: typeof row.personal_context === "string" ? row.personal_context : "",
+    auto_create_tasks: typeof row.auto_create_tasks === "boolean" ? row.auto_create_tasks : true,
+  };
+}
+
+function buildSystem(base: string, settings: AISettings): string {
+  const blocks = [base];
+  const toneHint = TONE_HINTS[settings.tone];
+  if (toneHint) blocks.push(`PHONG CÁCH RIÊNG: ${toneHint}`);
+  if (settings.personal_context.trim()) {
+    blocks.push(`BỐI CẢNH CÁ NHÂN (từ người dùng):\n${settings.personal_context.trim()}`);
+  }
+  if (settings.custom_system_prompt.trim()) {
+    blocks.push(`CHỈ DẪN BỔ SUNG (từ người dùng):\n${settings.custom_system_prompt.trim()}`);
+  }
+  if (!settings.auto_create_tasks) {
+    blocks.push("LƯU Ý: KHÔNG tự động đề xuất khối ```actions``` create_task; chỉ đề xuất khi user yêu cầu rõ ràng.");
+  }
+  return blocks.join("\n\n");
 }
 
 Deno.serve(async (req) => {
@@ -188,8 +261,17 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY chưa cấu hình");
 
+    // Đọc cài đặt AI cá nhân
+    const settings = await loadSettings(auth.supabase, auth.userId);
+
+    // Cắt history theo max_history (giữ lại N tin nhắn cuối)
+    const trimmedMessages = Array.isArray(messages)
+      ? messages.slice(-Math.max(1, settings.max_history))
+      : [];
+
     // ==== Mode: extract_task — non-streaming, tool-calling để lấy structured output ====
     if (mode === "extract_task") {
+      const extractSystem = buildSystem(EXTRACT_SYSTEM, settings);
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -197,8 +279,9 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{ role: "system", content: EXTRACT_SYSTEM }, ...messages],
+          model: settings.model,
+          temperature: settings.temperature,
+          messages: [{ role: "system", content: extractSystem }, ...trimmedMessages],
           tools: [EXTRACT_TOOL],
           tool_choice: { type: "function", function: { name: "extract_task" } },
         }),
@@ -281,21 +364,22 @@ Deno.serve(async (req) => {
     }
 
     // ==== Các mode còn lại: streaming chat thông thường ====
-    let systemContent = BASE_SYSTEM;
+    let baseSystem = BASE_SYSTEM;
     if (mode === "summarize") {
-      systemContent +=
+      baseSystem +=
         "\n\nNGỮ CẢNH: Tóm tắt nội dung. Trả về 1 khối ```summary``` ngắn gọn ở đầu, sau đó ```checklist``` các điểm chính, cuối cùng ```actions``` đề xuất 1-2 hành động (vd create_task / create_note).";
     } else if (mode === "analyze") {
-      systemContent +=
+      baseSystem +=
         "\n\nNGỮ CẢNH: Phân tích báo cáo. Trả về ```summary``` nhận định, ```table``` so sánh số liệu (nếu có), ```checklist``` 3-5 đề xuất hành động ưu tiên, và ```cite``` căn cứ.";
     } else if (mode === "weekly_plan") {
-      systemContent +=
+      baseSystem +=
         "\n\nNGỮ CẢNH: Lập kế hoạch tuần. BẮT BUỘC trả về 1 khối ```table``` với header: Thứ\\tBuổi\\tCông việc\\tLĩnh vực\\tƯu tiên. Cột Lĩnh vực dùng TÊN TIẾNG VIỆT đầy đủ (vd: \"An toàn hàng hải\"), KHÔNG dùng mã. Sau đó ```actions``` create_task cho 2-3 việc quan trọng nhất.";
     } else {
       // chat thuần
-      systemContent +=
+      baseSystem +=
         '\n\nNếu người dùng mô tả 1 công việc muốn tạo task, hãy gợi ý bằng khối ```actions``` với create_task: <tiêu đề>, hoặc nhắc họ bấm nút "Tạo task" trong khung trợ lý.';
     }
+    const systemContent = buildSystem(baseSystem, settings);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -304,9 +388,10 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: settings.model,
+        temperature: settings.temperature,
         stream: true,
-        messages: [{ role: "system", content: systemContent }, ...messages],
+        messages: [{ role: "system", content: systemContent }, ...trimmedMessages],
       }),
     });
 
