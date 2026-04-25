@@ -36,7 +36,10 @@ export function NoteEditorDialog({
   const isControlled = openProp !== undefined;
   const [openState, setOpenState] = useState(false);
   const open = isControlled ? openProp! : openState;
-  const setOpen = (v: boolean) => { isControlled ? onOpenChange?.(v) : setOpenState(v); };
+  const setOpen = (v: boolean) => {
+    if (isControlled) onOpenChange?.(v);
+    else setOpenState(v);
+  };
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");

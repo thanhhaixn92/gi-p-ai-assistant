@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useMemo, useState, type ReactNode } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Sparkles, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
@@ -46,7 +46,7 @@ interface Props {
 
 const LONG_THRESHOLD = 800;
 
-function CodeWithCopy({ children, className }: any) {
+function CodeWithCopy({ children, className }: { children?: ReactNode; className?: string }) {
   const [copied, setCopied] = useState(false);
   const isBlock = className?.includes("language-") || String(children).includes("\n");
   if (!isBlock) {
@@ -76,7 +76,7 @@ function CodeWithCopy({ children, className }: any) {
 
 export function AIMessageRenderer({ content, isStreaming, onCreateTask }: Props) {
   const { data: tax } = useTaxonomies();
-  const codeMap = tax?.codeToName ?? new Map<string, string>();
+  const codeMap = useMemo(() => tax?.codeToName ?? new Map<string, string>(), [tax?.codeToName]);
 
   // Prettify mã code → tên tiếng Việt cho mọi nội dung văn bản (trừ block actions giữ path)
   const prettyContent = useMemo(() => prettifyCodes(content, codeMap), [content, codeMap]);
@@ -95,6 +95,11 @@ export function AIMessageRenderer({ content, isStreaming, onCreateTask }: Props)
   const handleCopyText = () => {
     navigator.clipboard.writeText(prettyContent);
     toast.success("Đã sao chép");
+  };
+
+  const markdownComponents: Components = {
+    code: CodeWithCopy,
+    pre: ({ children }) => <>{children}</>,
   };
 
   return (
@@ -144,12 +149,7 @@ export function AIMessageRenderer({ content, isStreaming, onCreateTask }: Props)
             key={i}
             className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-headings:my-2 prose-pre:my-0 [&_*]:max-w-full [&_table]:block [&_table]:overflow-x-auto"
           >
-            <ReactMarkdown
-              components={{
-                code: CodeWithCopy as any,
-                pre: ({ children }) => <>{children}</>,
-              }}
-            >
+            <ReactMarkdown components={markdownComponents}>
               {b.content}
             </ReactMarkdown>
           </div>

@@ -22,8 +22,8 @@ import { vi } from "date-fns/locale";
 export default function EditorialPage() {
   const { sessionsQuery, create, remove } = useEditorialSessions();
   const taxonomies = useTaxonomies();
-  const categories = taxonomies.data?.categories ?? [];
-  const assignments = taxonomies.data?.assignments ?? [];
+  const categories = useMemo(() => taxonomies.data?.categories ?? [], [taxonomies.data?.categories]);
+  const assignments = useMemo(() => taxonomies.data?.assignments ?? [], [taxonomies.data?.assignments]);
   const [open, setOpen] = useState(false);
 
   const [title, setTitle] = useState("");

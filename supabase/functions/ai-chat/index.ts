@@ -190,7 +190,7 @@ const TONE_HINTS: Record<string, string> = {
 
 async function authenticate(
   req: Request,
-): Promise<{ userId: string; supabase: any } | Response> {
+): Promise<{ userId: string; supabase: ReturnType<typeof createClient> } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Chưa đăng nhập" }), {
@@ -214,14 +214,14 @@ async function authenticate(
   return { userId: data.user.id, supabase };
 }
 
-async function loadSettings(supabase: any, userId: string): Promise<AISettings> {
+async function loadSettings(supabase: ReturnType<typeof createClient>, userId: string): Promise<AISettings> {
   const { data } = await supabase
     .from("ai_settings")
     .select("model,temperature,tone,max_history,custom_system_prompt,personal_context,auto_create_tasks")
     .eq("user_id", userId)
     .maybeSingle();
   if (!data) return DEFAULT_SETTINGS;
-  const row = data as Record<string, any>;
+  const row = data as Record<string, unknown>;
   return {
     model: typeof row.model === "string" && ALLOWED_MODELS.has(row.model) ? row.model : DEFAULT_SETTINGS.model,
     temperature: typeof row.temperature === "number" ? row.temperature : DEFAULT_SETTINGS.temperature,

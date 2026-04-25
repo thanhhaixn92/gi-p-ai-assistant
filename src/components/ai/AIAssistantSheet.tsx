@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, Send, Trash2, ListTodo, FileText, BarChart3, CalendarDays, Mic, Loader2 } from "lucide-react";
+import { Sparkles, Send, Trash2, ListTodo, FileText, BarChart3, CalendarDays, Mic, Loader2, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ interface AIAssistantSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const QUICK_ACTIONS: { mode: Mode; label: string; icon: any; placeholder: string }[] = [
+const QUICK_ACTIONS: { mode: Mode; label: string; icon: LucideIcon; placeholder: string }[] = [
   { mode: "create_task", label: "Tạo task", icon: ListTodo, placeholder: "Mô tả công việc cần tạo... (vd: Tuần sau họp hội đồng an toàn lao động, chuẩn bị báo cáo Q1)" },
   { mode: "summarize", label: "Tóm tắt", icon: FileText, placeholder: "Dán nội dung cần tóm tắt..." },
   { mode: "analyze", label: "Phân tích", icon: BarChart3, placeholder: "Dán nội dung báo cáo cần phân tích..." },
@@ -221,6 +221,8 @@ export function AIAssistantSheet({ open, onOpenChange }: AIAssistantSheetProps) 
     }
     return -1;
   })();
+  const latestMessage = messages[messages.length - 1];
+  const showLoadingSkeleton = loading && latestMessage?.kind === "text" && !latestMessage.streaming;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -261,7 +263,7 @@ export function AIAssistantSheet({ open, onOpenChange }: AIAssistantSheetProps) 
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 min-h-0" ref={scrollRef as any}>
+        <ScrollArea className="flex-1 min-h-0" ref={scrollRef}>
           <div className="px-5 py-4">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground text-sm py-12">
@@ -362,7 +364,7 @@ export function AIAssistantSheet({ open, onOpenChange }: AIAssistantSheetProps) 
                     </div>
                   );
                 })}
-                {loading && messages[messages.length - 1]?.kind === "text" && !(messages[messages.length - 1] as any).streaming && (
+                {showLoadingSkeleton && (
                   <div className="flex gap-2">
                     <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0 shadow-sm">
                       <Sparkles className="h-3.5 w-3.5 text-primary-foreground animate-pulse" />

@@ -151,7 +151,7 @@ export function AITaskBuilder({ userPrompt, onClose }: Props) {
   /** Lấy giá trị cuối cùng của 1 trường: tick → giá trị AI/đã sửa, bỏ tick → default */
   const finalValue = <K extends keyof typeof DEFAULTS>(field: K): (typeof DEFAULTS)[K] => {
     if (!draft) return DEFAULTS[field];
-    return (confirmed[field] ? (draft[field] as any) : DEFAULTS[field]) as (typeof DEFAULTS)[K];
+    return confirmed[field] ? (draft[field] as (typeof DEFAULTS)[K]) : DEFAULTS[field];
   };
 
   const handleCreate = async () => {

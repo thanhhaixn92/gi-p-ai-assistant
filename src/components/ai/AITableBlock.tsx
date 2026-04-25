@@ -19,7 +19,7 @@ function parseTable(raw: string): { headers: string[]; rows: string[][] } | null
 
   const sep = detectSep(lines[0]);
   const split = (l: string) => {
-    let parts = l.split(sep).map((c) => c.trim());
+    const parts = l.split(sep).map((c) => c.trim());
     if (sep === "|") {
       // bỏ ô rỗng đầu/cuối do "| a | b |"
       if (parts.length && parts[0] === "") parts.shift();
@@ -29,7 +29,7 @@ function parseTable(raw: string): { headers: string[]; rows: string[][] } | null
   };
 
   const headers = split(lines[0]);
-  const bodyLines = lines.slice(1).filter((l) => !/^[\|\-:\s]+$/.test(l)); // bỏ dòng "|---|---|"
+  const bodyLines = lines.slice(1).filter((l) => !/^[|:\s-]+$/.test(l)); // bỏ dòng "|---|---|"
   const rows = bodyLines.map(split);
   if (headers.length === 0) return null;
   return { headers, rows };
