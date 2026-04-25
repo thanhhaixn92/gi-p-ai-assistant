@@ -261,8 +261,17 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY chưa cấu hình");
 
+    // Đọc cài đặt AI cá nhân
+    const settings = await loadSettings(auth.supabase, auth.userId);
+
+    // Cắt history theo max_history (giữ lại N tin nhắn cuối)
+    const trimmedMessages = Array.isArray(messages)
+      ? messages.slice(-Math.max(1, settings.max_history))
+      : [];
+
     // ==== Mode: extract_task — non-streaming, tool-calling để lấy structured output ====
     if (mode === "extract_task") {
+      const extractSystem = buildSystem(EXTRACT_SYSTEM, settings);
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -270,8 +279,9 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{ role: "system", content: EXTRACT_SYSTEM }, ...messages],
+          model: settings.model,
+          temperature: settings.temperature,
+          messages: [{ role: "system", content: extractSystem }, ...trimmedMessages],
           tools: [EXTRACT_TOOL],
           tool_choice: { type: "function", function: { name: "extract_task" } },
         }),
