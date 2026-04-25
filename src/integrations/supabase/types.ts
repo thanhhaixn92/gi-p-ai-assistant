@@ -41,6 +41,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_settings: {
+        Row: {
+          auto_create_tasks: boolean
+          created_at: string
+          custom_system_prompt: string
+          id: string
+          max_history: number
+          model: string
+          personal_context: string
+          temperature: number
+          tone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_create_tasks?: boolean
+          created_at?: string
+          custom_system_prompt?: string
+          id?: string
+          max_history?: number
+          model?: string
+          personal_context?: string
+          temperature?: number
+          tone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_create_tasks?: boolean
+          created_at?: string
+          custom_system_prompt?: string
+          id?: string
+          max_history?: number
+          model?: string
+          personal_context?: string
+          temperature?: number
+          tone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           code: string
