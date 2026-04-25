@@ -76,6 +76,14 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === "/cai-dat-ai"} tooltip="Cài đặt AI">
+                  <NavLink to="/cai-dat-ai" className={linkCls}>
+                    <Sparkles className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>Cài đặt AI</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
