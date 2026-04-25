@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Anchor, FileText, LayoutDashboard, type LucideIcon, ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake, LifeBuoy, Award } from "lucide-react";
+import { Anchor, FileText, LayoutDashboard, type LucideIcon, ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake, LifeBuoy, Award, Sparkles } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
   ShieldCheck, Wrench, TrendingUp, Wallet, Users, Building2, Scale, GraduationCap, Handshake,
