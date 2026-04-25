@@ -167,6 +167,242 @@ export type Database = {
         }
         Relationships: []
       }
+      editorial_exports: {
+        Row: {
+          approved_image_count: number
+          created_at: string
+          file_name: string
+          format: string
+          id: string
+          session_id: string
+          storage_path: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_image_count?: number
+          created_at?: string
+          file_name: string
+          format?: string
+          id?: string
+          session_id: string
+          storage_path?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_image_count?: number
+          created_at?: string
+          file_name?: string
+          format?: string
+          id?: string
+          session_id?: string
+          storage_path?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_exports_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editorial_images: {
+        Row: {
+          alt_text: string
+          caption: string
+          created_at: string
+          height: number | null
+          id: string
+          paragraph_anchor: string | null
+          prompt: string | null
+          quality_status: Database["public"]["Enums"]["editorial_image_quality"]
+          review_status: Database["public"]["Enums"]["editorial_image_review"]
+          session_id: string
+          source: string
+          storage_path: string
+          updated_at: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          alt_text?: string
+          caption?: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          paragraph_anchor?: string | null
+          prompt?: string | null
+          quality_status?: Database["public"]["Enums"]["editorial_image_quality"]
+          review_status?: Database["public"]["Enums"]["editorial_image_review"]
+          session_id: string
+          source?: string
+          storage_path: string
+          updated_at?: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          alt_text?: string
+          caption?: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          paragraph_anchor?: string | null
+          prompt?: string | null
+          quality_status?: Database["public"]["Enums"]["editorial_image_quality"]
+          review_status?: Database["public"]["Enums"]["editorial_image_review"]
+          session_id?: string
+          source?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_images_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editorial_sessions: {
+        Row: {
+          article_type: Database["public"]["Enums"]["editorial_article_type"]
+          assignment_code: string | null
+          brief: string
+          category_code: string | null
+          created_at: string
+          current_content: string
+          id: string
+          status: Database["public"]["Enums"]["editorial_session_status"]
+          task_type: Database["public"]["Enums"]["editorial_task_type"]
+          title: string
+          tone: Database["public"]["Enums"]["editorial_tone"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_type?: Database["public"]["Enums"]["editorial_article_type"]
+          assignment_code?: string | null
+          brief?: string
+          category_code?: string | null
+          created_at?: string
+          current_content?: string
+          id?: string
+          status?: Database["public"]["Enums"]["editorial_session_status"]
+          task_type?: Database["public"]["Enums"]["editorial_task_type"]
+          title: string
+          tone?: Database["public"]["Enums"]["editorial_tone"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_type?: Database["public"]["Enums"]["editorial_article_type"]
+          assignment_code?: string | null
+          brief?: string
+          category_code?: string | null
+          created_at?: string
+          current_content?: string
+          id?: string
+          status?: Database["public"]["Enums"]["editorial_session_status"]
+          task_type?: Database["public"]["Enums"]["editorial_task_type"]
+          title?: string
+          tone?: Database["public"]["Enums"]["editorial_tone"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      editorial_sources: {
+        Row: {
+          created_at: string
+          fetched_at: string | null
+          id: string
+          label: string | null
+          raw_text: string | null
+          session_id: string
+          source_type: string
+          storage_path: string | null
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fetched_at?: string | null
+          id?: string
+          label?: string | null
+          raw_text?: string | null
+          session_id: string
+          source_type?: string
+          storage_path?: string | null
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fetched_at?: string | null
+          id?: string
+          label?: string | null
+          raw_text?: string | null
+          session_id?: string
+          source_type?: string
+          storage_path?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_sources_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editorial_versions: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          note: string | null
+          session_id: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_id: string
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_id?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_versions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "editorial_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           assignment_code: string | null
@@ -404,6 +640,36 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      editorial_article_type:
+        | "news"
+        | "notice"
+        | "report"
+        | "plan"
+        | "analysis"
+        | "minutes"
+        | "other"
+      editorial_image_quality:
+        | "unrated"
+        | "good"
+        | "broken"
+        | "needs_replacement"
+      editorial_image_review: "suggested" | "approved" | "rejected"
+      editorial_session_status:
+        | "draft"
+        | "composing"
+        | "reviewing_images"
+        | "ready"
+        | "exported"
+        | "archived"
+      editorial_task_type:
+        | "generate"
+        | "edit"
+        | "summarize"
+        | "proofread"
+        | "expand"
+        | "shorten"
+        | "normalize_tone"
+      editorial_tone: "formal" | "neutral" | "friendly" | "concise" | "detailed"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "doing" | "review" | "done" | "blocked"
     }
@@ -533,6 +799,40 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      editorial_article_type: [
+        "news",
+        "notice",
+        "report",
+        "plan",
+        "analysis",
+        "minutes",
+        "other",
+      ],
+      editorial_image_quality: [
+        "unrated",
+        "good",
+        "broken",
+        "needs_replacement",
+      ],
+      editorial_image_review: ["suggested", "approved", "rejected"],
+      editorial_session_status: [
+        "draft",
+        "composing",
+        "reviewing_images",
+        "ready",
+        "exported",
+        "archived",
+      ],
+      editorial_task_type: [
+        "generate",
+        "edit",
+        "summarize",
+        "proofread",
+        "expand",
+        "shorten",
+        "normalize_tone",
+      ],
+      editorial_tone: ["formal", "neutral", "friendly", "concise", "detailed"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: ["todo", "doing", "review", "done", "blocked"],
     },
