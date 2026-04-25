@@ -190,7 +190,7 @@ const TONE_HINTS: Record<string, string> = {
 
 async function authenticate(
   req: Request,
-): Promise<{ userId: string; supabase: ReturnType<typeof createClient> } | Response> {
+): Promise<{ userId: string; supabase: any } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Chưa đăng nhập" }), {
@@ -214,24 +214,22 @@ async function authenticate(
   return { userId: data.user.id, supabase };
 }
 
-async function loadSettings(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-): Promise<AISettings> {
+async function loadSettings(supabase: any, userId: string): Promise<AISettings> {
   const { data } = await supabase
     .from("ai_settings")
     .select("model,temperature,tone,max_history,custom_system_prompt,personal_context,auto_create_tasks")
     .eq("user_id", userId)
     .maybeSingle();
   if (!data) return DEFAULT_SETTINGS;
+  const row = data as Record<string, any>;
   return {
-    model: ALLOWED_MODELS.has(data.model) ? data.model : DEFAULT_SETTINGS.model,
-    temperature: typeof data.temperature === "number" ? data.temperature : DEFAULT_SETTINGS.temperature,
-    tone: data.tone ?? DEFAULT_SETTINGS.tone,
-    max_history: typeof data.max_history === "number" ? data.max_history : DEFAULT_SETTINGS.max_history,
-    custom_system_prompt: data.custom_system_prompt ?? "",
-    personal_context: data.personal_context ?? "",
-    auto_create_tasks: data.auto_create_tasks ?? true,
+    model: typeof row.model === "string" && ALLOWED_MODELS.has(row.model) ? row.model : DEFAULT_SETTINGS.model,
+    temperature: typeof row.temperature === "number" ? row.temperature : DEFAULT_SETTINGS.temperature,
+    tone: typeof row.tone === "string" ? row.tone : DEFAULT_SETTINGS.tone,
+    max_history: typeof row.max_history === "number" ? row.max_history : DEFAULT_SETTINGS.max_history,
+    custom_system_prompt: typeof row.custom_system_prompt === "string" ? row.custom_system_prompt : "",
+    personal_context: typeof row.personal_context === "string" ? row.personal_context : "",
+    auto_create_tasks: typeof row.auto_create_tasks === "boolean" ? row.auto_create_tasks : true,
   };
 }
 
