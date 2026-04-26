@@ -126,10 +126,12 @@ export function useDeleteTask() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["task-stats"] });
+      if (id) qc.invalidateQueries({ queryKey: ["task", id] });
       toast.success("Đã xoá task");
     },
     onError: (e: Error) => toast.error("Xoá thất bại", { description: e.message }),
