@@ -13,6 +13,9 @@ import AssignmentPage from "./pages/AssignmentPage.tsx";
 import NotesPage from "./pages/NotesPage.tsx";
 import AISettingsPage from "./pages/AISettingsPage.tsx";
 import EditorialPage from "./pages/EditorialPage.tsx";
+import TaskDetailPage from "./pages/TaskDetailPage.tsx";
+import NoteDetailPage from "./pages/NoteDetailPage.tsx";
+import EditorialDetailPage from "./pages/EditorialDetailPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
