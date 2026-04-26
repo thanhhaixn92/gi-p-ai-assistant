@@ -217,7 +217,7 @@ async function authenticate(
   return { userId: data.user.id, supabase };
 }
 
-async function loadSettings(supabase: ReturnType<typeof createClient>, userId: string): Promise<AISettings> {
+async function loadSettings(supabase: SBClient, userId: string): Promise<AISettings> {
   const { data } = await supabase
     .from("ai_settings")
     .select("model,temperature,tone,max_history,custom_system_prompt,personal_context,auto_create_tasks")
