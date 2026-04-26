@@ -18,9 +18,12 @@ import { FileEdit, Plus, Sparkles, Trash2, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import { SessionEditorDialog } from "@/components/editorial/SessionEditorDialog";
 
 export default function EditorialPage() {
   const { sessionsQuery, create, remove } = useEditorialSessions();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   const taxonomies = useTaxonomies();
   const categories = useMemo(() => taxonomies.data?.categories ?? [], [taxonomies.data?.categories]);
   const assignments = useMemo(() => taxonomies.data?.assignments ?? [], [taxonomies.data?.assignments]);
