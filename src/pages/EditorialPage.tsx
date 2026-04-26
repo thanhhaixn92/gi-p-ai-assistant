@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,12 +19,10 @@ import { FileEdit, Plus, Sparkles, Trash2, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { SessionEditorDialog } from "@/components/editorial/SessionEditorDialog";
 
 export default function EditorialPage() {
+  const navigate = useNavigate();
   const { sessionsQuery, create, remove } = useEditorialSessions();
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
   const taxonomies = useTaxonomies();
   const categories = useMemo(() => taxonomies.data?.categories ?? [], [taxonomies.data?.categories]);
   const assignments = useMemo(() => taxonomies.data?.assignments ?? [], [taxonomies.data?.assignments]);
@@ -45,7 +44,7 @@ export default function EditorialPage() {
   const handleCreate = async () => {
     if (!title.trim()) { toast({ title: "Cần tiêu đề phiên", variant: "destructive" }); return; }
     try {
-      await create.mutateAsync({
+      const session = await create.mutateAsync({
         title: title.trim(),
         article_type: articleType,
         task_type: taskType,
@@ -57,18 +56,15 @@ export default function EditorialPage() {
       toast({ title: "Đã tạo phiên biên tập" });
       reset();
       setOpen(false);
+      if (session?.id) navigate(`/bien-tap/${session.id}`);
     } catch (e) {
       toast({ title: "Không tạo được phiên", description: String((e as Error).message), variant: "destructive" });
     }
   };
 
   const sessions = sessionsQuery.data ?? [];
-  const selectedSession = sessions.find((s) => s.id === selectedSessionId) ?? null;
 
-  const handleOpenSession = (id: string) => {
-    setSelectedSessionId(id);
-    setEditorOpen(true);
-  };
+  const handleOpenSession = (id: string) => navigate(`/bien-tap/${id}`);
 
   const taxonomyName = useMemo(() => {
     const map = new Map<string, string>();
@@ -205,89 +201,63 @@ export default function EditorialPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sessions.map((s) => {
-              const isSelected = s.id === selectedSessionId;
-              return (
-                <Card
-                  key={s.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleOpenSession(s.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleOpenSession(s.id);
-                    }
-                  }}
-                  className={`cursor-pointer hover:shadow-md transition-all ${
-                    isSelected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : ""
-                  }`}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-base line-clamp-2">{s.title}</CardTitle>
-                      <Button
-                        variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (confirm(`Xoá phiên "${s.title}"?`)) {
-                            await remove.mutateAsync(s.id);
-                            if (selectedSessionId === s.id) {
-                              setSelectedSessionId(null);
-                              setEditorOpen(false);
-                            }
-                            toast({ title: "Đã xoá phiên" });
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </div>
-                    <CardDescription className="flex items-center gap-1 text-xs">
-                      <Calendar className="h-3 w-3" />
-                      {formatDistanceToNow(new Date(s.updated_at), { addSuffix: true, locale: vi })}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex flex-wrap gap-1.5">
-                      <Badge variant="secondary">{ARTICLE_TYPE_LABEL[s.article_type]}</Badge>
-                      <Badge variant="outline">{TASK_TYPE_LABEL[s.task_type]}</Badge>
-                      <Badge variant="outline">{TONE_LABEL[s.tone]}</Badge>
-                      <Badge>{SESSION_STATUS_LABEL[s.status]}</Badge>
-                    </div>
-                    {(s.category_code || s.assignment_code) && (
-                      <p className="text-xs text-muted-foreground">
-                        {s.category_code ? taxonomyName.get(s.category_code) ?? s.category_code : ""}
-                        {s.assignment_code ? ` · ${taxonomyName.get(s.assignment_code) ?? s.assignment_code}` : ""}
-                      </p>
-                    )}
-                    {s.brief && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{s.brief}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {sessions.map((s) => (
+              <Card
+                key={s.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleOpenSession(s.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleOpenSession(s.id);
+                  }
+                }}
+                className="cursor-pointer hover:shadow-md transition-all"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base line-clamp-2">{s.title}</CardTitle>
+                    <Button
+                      variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (confirm(`Xoá phiên "${s.title}"?`)) {
+                          await remove.mutateAsync(s.id);
+                          toast({ title: "Đã xoá phiên" });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                  <CardDescription className="flex items-center gap-1 text-xs">
+                    <Calendar className="h-3 w-3" />
+                    {formatDistanceToNow(new Date(s.updated_at), { addSuffix: true, locale: vi })}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="secondary">{ARTICLE_TYPE_LABEL[s.article_type]}</Badge>
+                    <Badge variant="outline">{TASK_TYPE_LABEL[s.task_type]}</Badge>
+                    <Badge variant="outline">{TONE_LABEL[s.tone]}</Badge>
+                    <Badge>{SESSION_STATUS_LABEL[s.status]}</Badge>
+                  </div>
+                  {(s.category_code || s.assignment_code) && (
+                    <p className="text-xs text-muted-foreground">
+                      {s.category_code ? taxonomyName.get(s.category_code) ?? s.category_code : ""}
+                      {s.assignment_code ? ` · ${taxonomyName.get(s.assignment_code) ?? s.assignment_code}` : ""}
+                    </p>
+                  )}
+                  {s.brief && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{s.brief}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
-
-        <Card className="bg-muted/30 border-dashed">
-          <CardContent className="py-4 text-xs text-muted-foreground">
-            {selectedSession
-              ? <>Đang chọn: <strong>{selectedSession.title}</strong></>
-              : "Chọn một phiên biên tập để xem và chỉnh sửa."}
-          </CardContent>
-        </Card>
       </div>
-
-      <SessionEditorDialog
-        session={selectedSession}
-        open={editorOpen}
-        onOpenChange={(v) => {
-          setEditorOpen(v);
-          if (!v) setSelectedSessionId(null);
-        }}
-      />
     </AppLayout>
   );
 }

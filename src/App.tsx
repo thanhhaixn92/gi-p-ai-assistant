@@ -13,6 +13,9 @@ import AssignmentPage from "./pages/AssignmentPage.tsx";
 import NotesPage from "./pages/NotesPage.tsx";
 import AISettingsPage from "./pages/AISettingsPage.tsx";
 import EditorialPage from "./pages/EditorialPage.tsx";
+import TaskDetailPage from "./pages/TaskDetailPage.tsx";
+import NoteDetailPage from "./pages/NoteDetailPage.tsx";
+import EditorialDetailPage from "./pages/EditorialDetailPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -31,6 +34,9 @@ const App = () => (
             <Route path="/ghi-chu" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
             <Route path="/cai-dat-ai" element={<ProtectedRoute><AISettingsPage /></ProtectedRoute>} />
             <Route path="/bien-tap" element={<ProtectedRoute><EditorialPage /></ProtectedRoute>} />
+            <Route path="/cong-viec/:id" element={<ProtectedRoute><TaskDetailPage /></ProtectedRoute>} />
+            <Route path="/ghi-chu/:id" element={<ProtectedRoute><NoteDetailPage /></ProtectedRoute>} />
+            <Route path="/bien-tap/:id" element={<ProtectedRoute><EditorialDetailPage /></ProtectedRoute>} />
             <Route path="/linh-vuc/:code" element={<ProtectedRoute><CategoryPage /></ProtectedRoute>} />
             <Route path="/kiem-nhiem/:code" element={<ProtectedRoute><AssignmentPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

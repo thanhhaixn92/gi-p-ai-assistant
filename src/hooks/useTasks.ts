@@ -32,6 +32,23 @@ export function useTasks(filters: TaskFilters = {}) {
   });
 }
 
+export function useTask(id?: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["task", id],
+    enabled: !!user && !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as Task | null) ?? null;
+    },
+  });
+}
+
 export function useTaskStats() {
   const { user } = useAuth();
   return useQuery({
@@ -85,9 +102,10 @@ export function useUpdateTask() {
       if (error) throw error;
       return data as Task;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["task-stats"] });
+      if (data?.id) qc.invalidateQueries({ queryKey: ["task", data.id] });
     },
     onError: (e: Error) => toast.error("Cập nhật thất bại", { description: e.message }),
   });
@@ -108,10 +126,12 @@ export function useDeleteTask() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["task-stats"] });
+      if (id) qc.invalidateQueries({ queryKey: ["task", id] });
       toast.success("Đã xoá task");
     },
     onError: (e: Error) => toast.error("Xoá thất bại", { description: e.message }),

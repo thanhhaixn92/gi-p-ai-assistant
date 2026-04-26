@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createSession,
   deleteSession,
+  getSession,
   listSessions,
+  listVersions,
+  snapshotVersion,
   updateSession,
   type CreateSessionInput,
 } from "@/services/editorialService";
@@ -26,13 +29,46 @@ export function useEditorialSessions() {
   const update = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: Partial<EditorialSession> }) =>
       updateSession(id, patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["editorial_session", vars.id] });
+    },
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => deleteSession(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: KEY });
+      qc.invalidateQueries({ queryKey: ["editorial_session", id] });
+    },
   });
 
   return { sessionsQuery, create, update, remove };
+}
+
+export function useEditorialSession(id?: string) {
+  return useQuery({
+    queryKey: ["editorial_session", id],
+    enabled: !!id,
+    queryFn: () => getSession(id!),
+  });
+}
+
+export function useEditorialVersions(sessionId?: string) {
+  return useQuery({
+    queryKey: ["editorial_versions", sessionId],
+    enabled: !!sessionId,
+    queryFn: () => listVersions(sessionId!),
+  });
+}
+
+export function useSnapshotEditorialVersion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sessionId, content, note }: { sessionId: string; content: string; note?: string }) =>
+      snapshotVersion(sessionId, content, note),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["editorial_versions", vars.sessionId] });
+    },
+  });
 }
