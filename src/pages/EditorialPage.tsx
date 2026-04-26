@@ -205,47 +205,69 @@ export default function EditorialPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sessions.map((s) => (
-              <Card key={s.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base line-clamp-2">{s.title}</CardTitle>
-                    <Button
-                      variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                      onClick={async () => {
-                        if (confirm(`Xoá phiên "${s.title}"?`)) {
-                          await remove.mutateAsync(s.id);
-                          toast({ title: "Đã xoá phiên" });
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                  <CardDescription className="flex items-center gap-1 text-xs">
-                    <Calendar className="h-3 w-3" />
-                    {formatDistanceToNow(new Date(s.updated_at), { addSuffix: true, locale: vi })}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="secondary">{ARTICLE_TYPE_LABEL[s.article_type]}</Badge>
-                    <Badge variant="outline">{TASK_TYPE_LABEL[s.task_type]}</Badge>
-                    <Badge variant="outline">{TONE_LABEL[s.tone]}</Badge>
-                    <Badge>{SESSION_STATUS_LABEL[s.status]}</Badge>
-                  </div>
-                  {(s.category_code || s.assignment_code) && (
-                    <p className="text-xs text-muted-foreground">
-                      {s.category_code ? taxonomyName.get(s.category_code) ?? s.category_code : ""}
-                      {s.assignment_code ? ` · ${taxonomyName.get(s.assignment_code) ?? s.assignment_code}` : ""}
-                    </p>
-                  )}
-                  {s.brief && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{s.brief}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            {sessions.map((s) => {
+              const isSelected = s.id === selectedSessionId;
+              return (
+                <Card
+                  key={s.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleOpenSession(s.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleOpenSession(s.id);
+                    }
+                  }}
+                  className={`cursor-pointer hover:shadow-md transition-all ${
+                    isSelected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : ""
+                  }`}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-base line-clamp-2">{s.title}</CardTitle>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (confirm(`Xoá phiên "${s.title}"?`)) {
+                            await remove.mutateAsync(s.id);
+                            if (selectedSessionId === s.id) {
+                              setSelectedSessionId(null);
+                              setEditorOpen(false);
+                            }
+                            toast({ title: "Đã xoá phiên" });
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                    <CardDescription className="flex items-center gap-1 text-xs">
+                      <Calendar className="h-3 w-3" />
+                      {formatDistanceToNow(new Date(s.updated_at), { addSuffix: true, locale: vi })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge variant="secondary">{ARTICLE_TYPE_LABEL[s.article_type]}</Badge>
+                      <Badge variant="outline">{TASK_TYPE_LABEL[s.task_type]}</Badge>
+                      <Badge variant="outline">{TONE_LABEL[s.tone]}</Badge>
+                      <Badge>{SESSION_STATUS_LABEL[s.status]}</Badge>
+                    </div>
+                    {(s.category_code || s.assignment_code) && (
+                      <p className="text-xs text-muted-foreground">
+                        {s.category_code ? taxonomyName.get(s.category_code) ?? s.category_code : ""}
+                        {s.assignment_code ? ` · ${taxonomyName.get(s.assignment_code) ?? s.assignment_code}` : ""}
+                      </p>
+                    )}
+                    {s.brief && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{s.brief}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 
