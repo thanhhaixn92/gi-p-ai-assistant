@@ -41,11 +41,11 @@ function relativeCreated(d: string) {
 }
 
 export function TaskCard({ task }: { task: Task }) {
+  const navigate = useNavigate();
   const changeStatus = useChangeStatus();
   const del = useDeleteTask();
   const due = formatDue(task.due_date);
   const pri = PRIORITY_META[task.priority];
-  const [open, setOpen] = useState(false);
 
   const { data: departments = [] } = useDepartments();
   const { data: attachments = [] } = useTaskAttachments(task.id);
@@ -53,74 +53,83 @@ export function TaskCard({ task }: { task: Task }) {
     .map((code) => departments.find((d) => d.code === code)?.name)
     .filter(Boolean) as string[];
 
+  const goDetail = () => navigate(`/cong-viec/${task.id}`);
+
   return (
-    <>
-      <Card className="p-3 shadow-card hover:shadow-elegant transition-shadow border-border/60 group">
-        <div className="flex items-start gap-2">
-          <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", pri.dot)} title={pri.label} />
-          <div className="flex-1 min-w-0">
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              className="text-left text-sm font-medium leading-snug text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors block w-full"
-            >
-              {task.title}
-            </button>
-            {task.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
-            )}
-
-            {deptNames.length > 0 && (
-              <div className="flex items-start gap-1 mt-2 text-[11px] text-muted-foreground">
-                <Briefcase className="h-3 w-3 mt-0.5 shrink-0" />
-                <span className="line-clamp-1">{deptNames.join(", ")}</span>
-              </div>
-            )}
-
-            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-medium", pri.tone)}>
-                {pri.label}
-              </Badge>
-              {due && (
-                <span className={cn("inline-flex items-center gap-1 text-[11px] font-medium", due.tone)}>
-                  <Calendar className="h-3 w-3" /> {due.label}
-                </span>
-              )}
-              {attachments.length > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
-                  <Paperclip className="h-3 w-3" /> {attachments.length}
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground ml-auto">
-                <Clock className="h-3 w-3" /> {relativeCreated(task.created_at)}
-              </span>
-            </div>
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={goDetail}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          goDetail();
+        }
+      }}
+      className="p-3 shadow-card hover:shadow-elegant transition-shadow border-border/60 group cursor-pointer"
+    >
+      <div className="flex items-start gap-2">
+        <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", pri.dot)} title={pri.label} />
+        <div className="flex-1 min-w-0">
+          <div className="text-left text-sm font-medium leading-snug text-foreground hover:text-primary transition-colors">
+            {task.title}
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Chuyển trạng thái</DropdownMenuLabel>
-              {STATUS_ORDER.filter((s) => s !== task.status).map((s) => (
-                <DropdownMenuItem key={s} onClick={() => changeStatus(task.id, s)}>
-                  <ArrowRight className="h-3.5 w-3.5 mr-2" /> {STATUS_META[s].label}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => {
-                if (confirm(`Xoá task "${task.title}"?`)) del.mutate(task.id);
-              }}>
-                <Trash2 className="h-3.5 w-3.5 mr-2" /> Xoá task
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </Card>
+          {task.description && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
+          )}
 
-      <TaskDetailDialog task={task} open={open} onOpenChange={setOpen} />
-    </>
+          {deptNames.length > 0 && (
+            <div className="flex items-start gap-1 mt-2 text-[11px] text-muted-foreground">
+              <Briefcase className="h-3 w-3 mt-0.5 shrink-0" />
+              <span className="line-clamp-1">{deptNames.join(", ")}</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 font-medium", pri.tone)}>
+              {pri.label}
+            </Badge>
+            {due && (
+              <span className={cn("inline-flex items-center gap-1 text-[11px] font-medium", due.tone)}>
+                <Calendar className="h-3 w-3" /> {due.label}
+              </span>
+            )}
+            {attachments.length > 0 && (
+              <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
+                <Paperclip className="h-3 w-3" /> {attachments.length}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground ml-auto">
+              <Clock className="h-3 w-3" /> {relativeCreated(task.created_at)}
+            </span>
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60 group-hover:opacity-100 transition-opacity">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuLabel>Chuyển trạng thái</DropdownMenuLabel>
+            {STATUS_ORDER.filter((s) => s !== task.status).map((s) => (
+              <DropdownMenuItem key={s} onClick={(e) => { e.stopPropagation(); changeStatus(task.id, s); }}>
+                <ArrowRight className="h-3.5 w-3.5 mr-2" /> {STATUS_META[s].label}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Xoá task "${task.title}"?`)) del.mutate(task.id);
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-2" /> Xoá task
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </Card>
   );
 }
