@@ -33,7 +33,8 @@ export default function NoteDetailPage() {
     if (!note) return;
     if (!confirm(`Xoá ghi chú "${note.title}"?`)) return;
     await del.mutateAsync(note.id);
-    window.history.length > 1 ? window.history.back() : (window.location.href = "/ghi-chu");
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = "/ghi-chu";
   };
 
   return (
