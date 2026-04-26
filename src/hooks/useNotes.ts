@@ -101,9 +101,10 @@ export function useUpdateNote() {
       if (error) throw error;
       return data as Note;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["notes"] });
       qc.invalidateQueries({ queryKey: ["note-tags"] });
+      if (data?.id) qc.invalidateQueries({ queryKey: ["note", data.id] });
     },
     onError: (e: Error) => toast.error("Cập nhật thất bại", { description: e.message }),
   });
@@ -115,10 +116,12 @@ export function useDeleteNote() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("notes").delete().eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ["notes"] });
       qc.invalidateQueries({ queryKey: ["note-tags"] });
+      if (id) qc.invalidateQueries({ queryKey: ["note", id] });
       toast.success("Đã xoá ghi chú");
     },
     onError: (e: Error) => toast.error("Xoá thất bại", { description: e.message }),
