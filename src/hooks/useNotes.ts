@@ -38,6 +38,23 @@ export function useNotes(filters: NoteFilters = {}) {
   });
 }
 
+export function useNote(id?: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["note", id],
+    enabled: !!user && !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notes")
+        .select("*")
+        .eq("id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as Note | null) ?? null;
+    },
+  });
+}
+
 export function useAllTags() {
   const { user } = useAuth();
   return useQuery({
