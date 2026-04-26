@@ -273,10 +273,21 @@ export default function EditorialPage() {
 
         <Card className="bg-muted/30 border-dashed">
           <CardContent className="py-4 text-xs text-muted-foreground">
-            <strong>Đang phát triển:</strong> Sinh nội dung bằng AI, quản lý ảnh minh hoạ, xuất Word/PDF sẽ có ở các bản cập nhật tiếp theo (Giai đoạn 4 & 5).
+            {selectedSession
+              ? <>Đang chọn: <strong>{selectedSession.title}</strong></>
+              : "Chọn một phiên biên tập để xem và chỉnh sửa."}
           </CardContent>
         </Card>
       </div>
+
+      <SessionEditorDialog
+        session={selectedSession}
+        open={editorOpen}
+        onOpenChange={(v) => {
+          setEditorOpen(v);
+          if (!v) setSelectedSessionId(null);
+        }}
+      />
     </AppLayout>
   );
 }
