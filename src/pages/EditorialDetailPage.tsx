@@ -43,7 +43,8 @@ export default function EditorialDetailPage() {
     if (!confirm(`Xoá phiên "${session.title}"?`)) return;
     await remove.mutateAsync(session.id);
     toast({ title: "Đã xoá phiên" });
-    window.history.length > 1 ? window.history.back() : (window.location.href = "/bien-tap");
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = "/bien-tap";
   };
 
   return (
