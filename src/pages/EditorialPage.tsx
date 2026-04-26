@@ -21,9 +21,8 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 
 export default function EditorialPage() {
+  const navigate = useNavigate();
   const { sessionsQuery, create, remove } = useEditorialSessions();
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
   const taxonomies = useTaxonomies();
   const categories = useMemo(() => taxonomies.data?.categories ?? [], [taxonomies.data?.categories]);
   const assignments = useMemo(() => taxonomies.data?.assignments ?? [], [taxonomies.data?.assignments]);
@@ -45,7 +44,7 @@ export default function EditorialPage() {
   const handleCreate = async () => {
     if (!title.trim()) { toast({ title: "Cần tiêu đề phiên", variant: "destructive" }); return; }
     try {
-      await create.mutateAsync({
+      const session = await create.mutateAsync({
         title: title.trim(),
         article_type: articleType,
         task_type: taskType,
@@ -57,18 +56,15 @@ export default function EditorialPage() {
       toast({ title: "Đã tạo phiên biên tập" });
       reset();
       setOpen(false);
+      if (session?.id) navigate(`/bien-tap/${session.id}`);
     } catch (e) {
       toast({ title: "Không tạo được phiên", description: String((e as Error).message), variant: "destructive" });
     }
   };
 
   const sessions = sessionsQuery.data ?? [];
-  const selectedSession = sessions.find((s) => s.id === selectedSessionId) ?? null;
 
-  const handleOpenSession = (id: string) => {
-    setSelectedSessionId(id);
-    setEditorOpen(true);
-  };
+  const handleOpenSession = (id: string) => navigate(`/bien-tap/${id}`);
 
   const taxonomyName = useMemo(() => {
     const map = new Map<string, string>();
