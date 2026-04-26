@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,7 +19,6 @@ import { FileEdit, Plus, Sparkles, Trash2, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { SessionEditorDialog } from "@/components/editorial/SessionEditorDialog";
 
 export default function EditorialPage() {
   const { sessionsQuery, create, remove } = useEditorialSessions();
