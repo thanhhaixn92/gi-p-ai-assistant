@@ -38,7 +38,8 @@ export default function TaskDetailPage() {
     if (!task) return;
     if (!confirm(`Xoá công việc "${task.title}"?`)) return;
     await del.mutateAsync(task.id);
-    window.history.length > 1 ? window.history.back() : (window.location.href = "/");
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = "/";
   };
 
   return (
