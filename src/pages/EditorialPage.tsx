@@ -63,6 +63,12 @@ export default function EditorialPage() {
   };
 
   const sessions = sessionsQuery.data ?? [];
+  const selectedSession = sessions.find((s) => s.id === selectedSessionId) ?? null;
+
+  const handleOpenSession = (id: string) => {
+    setSelectedSessionId(id);
+    setEditorOpen(true);
+  };
 
   const taxonomyName = useMemo(() => {
     const map = new Map<string, string>();
