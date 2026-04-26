@@ -102,9 +102,10 @@ export function useUpdateTask() {
       if (error) throw error;
       return data as Task;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["task-stats"] });
+      if (data?.id) qc.invalidateQueries({ queryKey: ["task", data.id] });
     },
     onError: (e: Error) => toast.error("Cập nhật thất bại", { description: e.message }),
   });
