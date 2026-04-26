@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { PRIORITY_META, STATUS_META, STATUS_ORDER, type Task } from "@/types/tas
 import { useChangeStatus, useDeleteTask } from "@/hooks/useTasks";
 import { useDepartments } from "@/hooks/useDepartments";
 import { cn } from "@/lib/utils";
-import { TaskDetailDialog } from "./TaskDetailDialog";
 import { useTaskAttachments } from "@/hooks/useTaskAttachments";
 
 function formatDue(d: string | null) {
