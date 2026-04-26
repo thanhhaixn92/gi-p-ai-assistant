@@ -32,6 +32,23 @@ export function useTasks(filters: TaskFilters = {}) {
   });
 }
 
+export function useTask(id?: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["task", id],
+    enabled: !!user && !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as Task | null) ?? null;
+    },
+  });
+}
+
 export function useTaskStats() {
   const { user } = useAuth();
   return useQuery({
