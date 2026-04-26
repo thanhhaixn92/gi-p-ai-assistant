@@ -188,9 +188,12 @@ const TONE_HINTS: Record<string, string> = {
   detailed: "Phong cách: chi tiết, giải thích đầy đủ, có ví dụ và bối cảnh khi cần.",
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SBClient = any;
+
 async function authenticate(
   req: Request,
-): Promise<{ userId: string; supabase: ReturnType<typeof createClient> } | Response> {
+): Promise<{ userId: string; supabase: SBClient } | Response> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Chưa đăng nhập" }), {
@@ -214,7 +217,7 @@ async function authenticate(
   return { userId: data.user.id, supabase };
 }
 
-async function loadSettings(supabase: ReturnType<typeof createClient>, userId: string): Promise<AISettings> {
+async function loadSettings(supabase: SBClient, userId: string): Promise<AISettings> {
   const { data } = await supabase
     .from("ai_settings")
     .select("model,temperature,tone,max_history,custom_system_prompt,personal_context,auto_create_tasks")
